@@ -1,0 +1,160 @@
+{
+  "app": {
+    "name": "কৃষিহাট",
+    "tagline": "বাংলাদেশের কৃষি মার্কেটপ্লেস"
+  },
+  "nav": {
+    "home": "হোম",
+    "marketplace": "মার্কেটপ্লেস",
+    "auctions": "নিলাম",
+    "market_prices": "বাজার দর",
+    "login": "লগইন",
+    "signup": "নিবন্ধন",
+    "dashboard": "ড্যাশবোর্ড",
+    "logout": "লগআউট"
+  },
+  "home": {
+    "hero_title": "মাঠ থেকে সরাসরি আপনার কাছে",
+    "hero_subtitle": "বাংলাদেশ জুড়ে কৃষি পণ্য কিনুন ও বিক্রি করুন",
+    "explore_marketplace": "মার্কেটপ্লেস দেখুন",
+    "view_auctions": "নিলাম দেখুন",
+    "market_prices_title": "আজকের বাজার দর"
+  },
+  "auth": {
+    "login": "লগইন",
+    "signup": "নিবন্ধন করুন",
+    "email": "ইমেইল",
+    "password": "পাসওয়ার্ড",
+    "confirm_password": "পাসওয়ার্ড নিশ্চিত করুন",
+    "full_name": "পুরো নাম",
+    "phone": "ফোন নম্বর",
+    "forgot_password": "পাসওয়ার্ড ভুলে গেছেন?",
+    "reset_password": "পাসওয়ার্ড রিসেট করুন",
+    "no_account": "অ্যাকাউন্ট নেই?",
+    "have_account": "ইতিমধ্যে অ্যাকাউন্ট আছে?",
+    "register_as": "নিবন্ধন করুন হিসেবে",
+    "buyer": "ক্রেতা",
+    "seller": "বিক্রেতা"
+  },
+  "marketplace": {
+    "title": "মার্কেটপ্লেস",
+    "search": "পণ্য খুঁজুন...",
+    "filter": "ফিল্টার",
+    "sort_by": "সাজান",
+    "all_categories": "সব ক্যাটাগরি",
+    "no_products": "কোনো পণ্য পাওয়া যায়নি",
+    "add_to_cart": "কার্টে যোগ করুন",
+    "buy_now": "এখনই কিনুন",
+    "price": "মূল্য",
+    "stock": "মজুদ আছে",
+    "seller": "বিক্রেতা"
+  },
+  "auction": {
+    "title": "নিলাম",
+    "current_bid": "বর্তমান বিড",
+    "starting_bid": "শুরুর বিড",
+    "place_bid": "বিড করুন",
+    "ends_in": "শেষ হবে",
+    "ended": "শেষ হয়েছে",
+    "winner": "বিজয়ী",
+    "no_bids": "এখনো কোনো বিড নেই",
+    "bid_history": "বিডের ইতিহাস"
+  },
+  "cart": {
+    "title": "আপনার কার্ট",
+    "empty": "কার্ট খালি",
+    "total": "মোট",
+    "checkout": "চেকআউট করুন",
+    "remove": "সরান",
+    "quantity": "পরিমাণ"
+  },
+  "orders": {
+    "title": "আমার অর্ডার",
+    "order_id": "অর্ডার আইডি",
+    "status": "অবস্থা",
+    "total": "মোট",
+    "date": "তারিখ",
+    "view": "অর্ডার দেখুন",
+    "no_orders": "এখনো কোনো অর্ডার নেই"
+  },
+  "status": {
+    "pending": "অপেক্ষমাণ",
+    "confirmed": "নিশ্চিত",
+    "processing": "প্রক্রিয়াধীন",
+    "shipped": "পাঠানো হয়েছে",
+    "delivered": "বিতরণ হয়েছে",
+    "cancelled": "বাতিল",
+    "refunded": "ফেরত দেওয়া হয়েছে",
+    "active": "সক্রিয়",
+    "suspended": "স্থগিত"
+  },
+  "dashboard": {
+    "title": "ড্যাশবোর্ড",
+    "welcome": "স্বাগতম",
+    "total_orders": "মোট অর্ডার",
+    "total_products": "মোট পণ্য",
+    "total_revenue": "মোট আয়",
+    "recent_orders": "সাম্প্রতিক অর্ডার"
+  },
+  "admin": {
+    "title": "অ্যাডমিন প্যানেল",
+    "users": "ব্যবহারকারী",
+    "sellers": "বিক্রেতা",
+    "products": "পণ্য",
+    "categories": "ক্যাটাগরি",
+    "orders": "অর্ডার",
+    "payments": "পেমেন্ট",
+    "logistics": "লজিস্টিক্স",
+    "market_prices": "বাজার দর",
+    "reports": "রিপোর্ট",
+    "audit_logs": "অডিট লগ"
+  },
+  "buttons": {
+    "save": "সংরক্ষণ",
+    "cancel": "বাতিল",
+    "delete": "মুছুন",
+    "edit": "সম্পাদনা",
+    "submit": "জমা দিন",
+    "confirm": "নিশ্চিত করুন",
+    "back": "পেছনে",
+    "next": "পরবর্তী",
+    "loading": "অপেক্ষা করুন...",
+    "search": "খুঁজুন",
+    "filter": "ফিল্টার",
+    "export": "রপ্তানি",
+    "add_new": "নতুন যোগ করুন"
+  },
+  "errors": {
+    "required": "এই তথ্য আবশ্যক",
+    "invalid_email": "ভুল ইমেইল ঠিকানা",
+    "min_length": "অনেক ছোট",
+    "server_error": "কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।",
+    "unauthorized": "চালিয়ে যেতে লগইন করুন",
+    "forbidden": "আপনার অনুমতি নেই"
+  },
+  "market_prices": {
+    "title": "বাজার দর",
+    "subtitle": "বাংলাদেশের বিভিন্ন বাজারের কৃষি পণ্যের দৈনিক মূল্য",
+    "product": "পণ্য",
+    "min_price": "সর্বনিম্ন মূল্য",
+    "max_price": "সর্বোচ্চ মূল্য",
+    "unit": "একক",
+    "market": "বাজার",
+    "date": "তারিখ",
+    "no_data": "কোনো মূল্য তথ্য নেই"
+  },
+  "chat": {
+    "title": "বার্তা",
+    "send": "পাঠান",
+    "type_message": "বার্তা লিখুন...",
+    "no_conversations": "এখনো কোনো কথোপকথন নেই",
+    "start_chat": "কথোপকথন শুরু করুন"
+  },
+  "profile": {
+    "title": "আমার প্রোফাইল",
+    "edit": "প্রোফাইল সম্পাদনা",
+    "shop_name": "দোকানের নাম",
+    "verified": "যাচাইকৃত বিক্রেতা",
+    "unverified": "যাচাই করা হয়নি"
+  }
+}

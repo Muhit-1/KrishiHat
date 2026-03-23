@@ -1,0 +1,160 @@
+{
+  "app": {
+    "name": "KrishiHat",
+    "tagline": "Bangladesh's Agricultural Marketplace"
+  },
+  "nav": {
+    "home": "Home",
+    "marketplace": "Marketplace",
+    "auctions": "Auctions",
+    "market_prices": "Market Prices",
+    "login": "Login",
+    "signup": "Sign Up",
+    "dashboard": "Dashboard",
+    "logout": "Logout"
+  },
+  "home": {
+    "hero_title": "Fresh from the Farm, Direct to You",
+    "hero_subtitle": "Buy and sell agricultural products across Bangladesh",
+    "explore_marketplace": "Explore Marketplace",
+    "view_auctions": "View Auctions",
+    "market_prices_title": "Today's Market Prices"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirm_password": "Confirm Password",
+    "full_name": "Full Name",
+    "phone": "Phone Number",
+    "forgot_password": "Forgot Password?",
+    "reset_password": "Reset Password",
+    "no_account": "Don't have an account?",
+    "have_account": "Already have an account?",
+    "register_as": "Register as",
+    "buyer": "Buyer",
+    "seller": "Seller"
+  },
+  "marketplace": {
+    "title": "Marketplace",
+    "search": "Search products...",
+    "filter": "Filter",
+    "sort_by": "Sort By",
+    "all_categories": "All Categories",
+    "no_products": "No products found",
+    "add_to_cart": "Add to Cart",
+    "buy_now": "Buy Now",
+    "price": "Price",
+    "stock": "In Stock",
+    "seller": "Seller"
+  },
+  "auction": {
+    "title": "Auctions",
+    "current_bid": "Current Bid",
+    "starting_bid": "Starting Bid",
+    "place_bid": "Place Bid",
+    "ends_in": "Ends In",
+    "ended": "Ended",
+    "winner": "Winner",
+    "no_bids": "No bids yet",
+    "bid_history": "Bid History"
+  },
+  "cart": {
+    "title": "Your Cart",
+    "empty": "Your cart is empty",
+    "total": "Total",
+    "checkout": "Proceed to Checkout",
+    "remove": "Remove",
+    "quantity": "Quantity"
+  },
+  "orders": {
+    "title": "My Orders",
+    "order_id": "Order ID",
+    "status": "Status",
+    "total": "Total",
+    "date": "Date",
+    "view": "View Order",
+    "no_orders": "No orders yet"
+  },
+  "status": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "processing": "Processing",
+    "shipped": "Shipped",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "refunded": "Refunded",
+    "active": "Active",
+    "suspended": "Suspended"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back",
+    "total_orders": "Total Orders",
+    "total_products": "Total Products",
+    "total_revenue": "Total Revenue",
+    "recent_orders": "Recent Orders"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "users": "Users",
+    "sellers": "Sellers",
+    "products": "Products",
+    "categories": "Categories",
+    "orders": "Orders",
+    "payments": "Payments",
+    "logistics": "Logistics",
+    "market_prices": "Market Prices",
+    "reports": "Reports",
+    "audit_logs": "Audit Logs"
+  },
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Please wait...",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "add_new": "Add New"
+  },
+  "errors": {
+    "required": "This field is required",
+    "invalid_email": "Invalid email address",
+    "min_length": "Too short",
+    "server_error": "Something went wrong. Please try again.",
+    "unauthorized": "Please login to continue",
+    "forbidden": "You don't have permission"
+  },
+  "market_prices": {
+    "title": "Market Prices",
+    "subtitle": "Daily agricultural commodity prices across Bangladesh",
+    "product": "Product",
+    "min_price": "Min Price",
+    "max_price": "Max Price",
+    "unit": "Unit",
+    "market": "Market",
+    "date": "Date",
+    "no_data": "No price data available"
+  },
+  "chat": {
+    "title": "Messages",
+    "send": "Send",
+    "type_message": "Type a message...",
+    "no_conversations": "No conversations yet",
+    "start_chat": "Start a conversation"
+  },
+  "profile": {
+    "title": "My Profile",
+    "edit": "Edit Profile",
+    "shop_name": "Shop Name",
+    "verified": "Verified Seller",
+    "unverified": "Unverified"
+  }
+}
