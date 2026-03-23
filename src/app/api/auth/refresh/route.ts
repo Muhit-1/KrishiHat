@@ -1,23 +1,24 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { rotateSession } from "@/backend/auth/session";
-import { ok, unauthorized, serverError } from "@/lib/utils/api-response";
 import { AUTH_CONSTANTS } from "@/lib/auth/auth-constants";
 import { getAccessTokenCookieOptions, getRefreshTokenCookieOptions } from "@/lib/auth/auth-cookie";
-import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = cookies();
-    const refreshToken = cookieStore.get(AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE)?.value;
-    if (!refreshToken) return unauthorized("No refresh token");
+    const refreshToken = req.cookies.get(AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE)?.value;
+    if (!refreshToken) {
+      return NextResponse.json({ success: false, message: "No refresh token" }, { status: 401 });
+    }
 
     const { accessToken, refreshToken: newRefreshToken } = await rotateSession(refreshToken);
 
-    cookieStore.set(AUTH_CONSTANTS.ACCESS_TOKEN_COOKIE, accessToken, getAccessTokenCookieOptions());
-    cookieStore.set(AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE, newRefreshToken, getRefreshTokenCookieOptions());
+    const response = NextResponse.json({ success: true, message: "Token refreshed" }, { status: 200 });
 
-    return ok(null, "Token refreshed");
+    response.cookies.set(AUTH_CONSTANTS.ACCESS_TOKEN_COOKIE, accessToken, getAccessTokenCookieOptions());
+    response.cookies.set(AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE, newRefreshToken, getRefreshTokenCookieOptions());
+
+    return response;
   } catch (err) {
-    return unauthorized("Invalid or expired session");
+    return NextResponse.json({ success: false, message: "Invalid or expired session" }, { status: 401 });
   }
 }

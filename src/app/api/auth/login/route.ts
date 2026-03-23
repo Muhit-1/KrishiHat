@@ -1,12 +1,11 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { comparePassword } from "@/backend/auth/password";
 import { createSession } from "@/backend/auth/session";
 import { loginSchema } from "@/lib/validations/auth.schema";
-import { ok, badRequest, unauthorized, serverError } from "@/lib/utils/api-response";
+import { badRequest, unauthorized, serverError } from "@/lib/utils/api-response";
 import { AUTH_CONSTANTS } from "@/lib/auth/auth-constants";
 import { getAccessTokenCookieOptions, getRefreshTokenCookieOptions } from "@/lib/auth/auth-cookie";
-import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,11 +31,16 @@ export async function POST(req: NextRequest) {
 
     const { accessToken, refreshToken } = await createSession(user);
 
-    const cookieStore = cookies();
-    cookieStore.set(AUTH_CONSTANTS.ACCESS_TOKEN_COOKIE, accessToken, getAccessTokenCookieOptions());
-    cookieStore.set(AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE, refreshToken, getRefreshTokenCookieOptions());
+    // Build response first, then set cookies on it
+    const response = NextResponse.json(
+      { success: true, data: { role: user.role }, message: "Login successful" },
+      { status: 200 }
+    );
 
-    return ok({ role: user.role }, "Login successful");
+    response.cookies.set(AUTH_CONSTANTS.ACCESS_TOKEN_COOKIE, accessToken, getAccessTokenCookieOptions());
+    response.cookies.set(AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE, refreshToken, getRefreshTokenCookieOptions());
+
+    return response;
   } catch (err) {
     console.error("[POST /api/auth/login]", err);
     return serverError();

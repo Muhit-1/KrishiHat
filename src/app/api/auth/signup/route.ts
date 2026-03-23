@@ -1,13 +1,11 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { hashPassword } from "@/backend/auth/password";
 import { createSession } from "@/backend/auth/session";
 import { signupSchema } from "@/lib/validations/auth.schema";
-import { created, badRequest, serverError } from "@/lib/utils/api-response";
+import { badRequest, serverError } from "@/lib/utils/api-response";
 import { AUTH_CONSTANTS } from "@/lib/auth/auth-constants";
 import { getAccessTokenCookieOptions, getRefreshTokenCookieOptions } from "@/lib/auth/auth-cookie";
-
-import { cookies } from "next/headers";
 import { createEmailVerificationToken } from "@/backend/auth/tokens";
 import { sendMail, emailVerificationTemplate } from "@/backend/utils/mailer";
 
@@ -31,13 +29,9 @@ export async function POST(req: NextRequest) {
         email,
         passwordHash,
         role,
-        profile: {
-          create: { fullName, phone },
-        },
+        profile: { create: { fullName, phone } },
         ...(role === "seller" && {
-          sellerProfile: {
-            create: { shopName: `${fullName}'s Shop` },
-          },
+          sellerProfile: { create: { shopName: `${fullName}'s Shop` } },
         }),
       },
     });
@@ -56,11 +50,16 @@ export async function POST(req: NextRequest) {
 
     const { accessToken, refreshToken } = await createSession(user);
 
-    const cookieStore = cookies();
-    cookieStore.set(AUTH_CONSTANTS.ACCESS_TOKEN_COOKIE, accessToken, getAccessTokenCookieOptions());
-    cookieStore.set(AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE, refreshToken, getRefreshTokenCookieOptions());
+    // Set cookies on the response object directly
+    const response = NextResponse.json(
+      { success: true, data: { role: user.role }, message: "Account created successfully" },
+      { status: 201 }
+    );
 
-    return created({ role: user.role }, "Account created. Please check your email to verify.");
+    response.cookies.set(AUTH_CONSTANTS.ACCESS_TOKEN_COOKIE, accessToken, getAccessTokenCookieOptions());
+    response.cookies.set(AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE, refreshToken, getRefreshTokenCookieOptions());
+
+    return response;
   } catch (err) {
     console.error("[POST /api/auth/signup]", err);
     return serverError();

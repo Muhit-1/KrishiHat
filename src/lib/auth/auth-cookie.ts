@@ -1,33 +1,35 @@
-import { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
+// src/lib/auth/auth-cookie.ts
+
 import { AUTH_CONSTANTS } from "./auth-constants";
 
 const isSecure = process.env.COOKIE_SECURE === "true";
 
-export function getAccessTokenCookieOptions(): Partial<ResponseCookie> {
+// Use plain objects — compatible with Next.js cookies().set()
+export function getAccessTokenCookieOptions() {
   return {
     httpOnly: true,
     secure: isSecure,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
     maxAge: AUTH_CONSTANTS.ACCESS_EXPIRES_MS / 1000,
   };
 }
 
-export function getRefreshTokenCookieOptions(): Partial<ResponseCookie> {
+export function getRefreshTokenCookieOptions() {
   return {
     httpOnly: true,
     secure: isSecure,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
     maxAge: AUTH_CONSTANTS.REFRESH_EXPIRES_MS / 1000,
   };
 }
 
-export function getClearCookieOptions(): Partial<ResponseCookie> {
+export function getClearCookieOptions() {
   return {
     httpOnly: true,
     secure: isSecure,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
     maxAge: 0,
   };
