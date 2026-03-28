@@ -1,15 +1,18 @@
 import { NextRequest } from "next/server";
 import { consumeEmailVerificationToken } from "@/backend/auth/tokens";
-import { ok, badRequest, serverError } from "@/lib/utils/api-response";
 import { createAuditLog } from "@/lib/utils/audit";
 
 export async function GET(req: NextRequest) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
   try {
     const token = req.nextUrl.searchParams.get("token");
-    if (!token) return badRequest("Missing token");
+    if (!token) {
+      return Response.redirect(new URL("/login?verify_error=missing", appUrl));
+    }
 
-    const user = await consumeEmailVerificationToken(token).catch((err) => {
-      throw new Error(err.message);
+    const user = await consumeEmailVerificationToken(token).catch((err: Error) => {
+      throw err;
     });
 
     await createAuditLog({
@@ -19,17 +22,15 @@ export async function GET(req: NextRequest) {
       entityId: user.id,
     });
 
-    // Redirect to login with success message
-    return Response.redirect(
-      new URL("/login?verified=1", process.env.NEXT_PUBLIC_APP_URL)
-    );
+    // Redirect to login with verified=1 so login page shows success message
+    return Response.redirect(new URL("/login?verified=1", appUrl));
   } catch (err: any) {
-    if (["TOKEN_INVALID", "TOKEN_USED", "TOKEN_EXPIRED"].includes(err.message)) {
-      return Response.redirect(
-        new URL("/login?verify_error=1", process.env.NEXT_PUBLIC_APP_URL)
-      );
-    }
-    console.error("[GET /api/auth/verify-email]", err);
-    return serverError();
+    const errorMap: Record<string, string> = {
+      TOKEN_INVALID: "invalid",
+      TOKEN_USED: "used",
+      TOKEN_EXPIRED: "expired",
+    };
+    const code = errorMap[err?.message] || "invalid";
+    return Response.redirect(new URL(`/login?verify_error=${code}`, appUrl));
   }
 }

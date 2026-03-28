@@ -7,13 +7,12 @@ import { signupSchema, type SignupInput } from "@/lib/validations/auth.schema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sprout } from "lucide-react";
+import { Sprout, MailCheck } from "lucide-react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [verificationSent, setVerificationSent] = useState<string | null>(null);
 
   const {
     register,
@@ -33,19 +32,59 @@ export default function SignupPage() {
       });
       const json = await res.json();
       if (json.success) {
-        const dashboardMap: Record<string, string> = {
-          buyer: "/buyer/dashboard",
-          seller: "/seller/dashboard",
-        };
-        router.push(dashboardMap[json.data.role] || "/");
+        // Show verification sent screen instead of redirecting to dashboard
+        setVerificationSent(json.data.maskedEmail);
       } else {
-        setServerError(json.message || "Signup failed");
+        setServerError(json.message || "Signup failed. Please try again.");
       }
     } catch {
       setServerError("Network error. Please try again.");
     }
   };
 
+  // ── Verification sent screen ─────────────────────────────
+  if (verificationSent) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center px-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="p-8 space-y-4">
+            <div className="flex justify-center">
+              <div className="bg-primary/10 rounded-full p-4">
+                <MailCheck className="h-10 w-10 text-primary" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold">Check your email</h2>
+            <p className="text-muted-foreground">
+              We&apos;ve sent a verification link to{" "}
+              <span className="font-semibold text-foreground">{verificationSent}</span>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Click the link in the email to verify your account. The link expires in 24 hours.
+            </p>
+            <div className="pt-2 space-y-2">
+              <Link href="/login">
+                <Button className="w-full">Go to Login</Button>
+              </Link>
+              <p className="text-xs text-muted-foreground">
+                Didn&apos;t receive it? Check your spam folder or{" "}
+                <button
+                  onClick={async () => {
+                    await fetch("/api/auth/resend-verification", { method: "POST" });
+                    alert("Verification email resent!");
+                  }}
+                  className="text-primary hover:underline"
+                >
+                  resend
+                </button>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ── Signup form ─────────────────────────────────────────
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-8">
       <Card className="w-full max-w-md">
@@ -57,7 +96,6 @@ export default function SignupPage() {
           <p className="text-muted-foreground text-sm">Join KrishiHat today</p>
         </CardHeader>
         <CardContent>
-          {/* NOTE: no action= on form, handleSubmit fully controls it */}
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
             <Input
               label="Full Name"

@@ -21,17 +21,29 @@ export async function POST(req: NextRequest) {
       where: { email, deletedAt: null },
     });
 
-    if (!user) return unauthorized("Invalid credentials");
+    if (!user) return unauthorized("Invalid email or password");
 
     const valid = await comparePassword(password, user.passwordHash);
-    if (!valid) return unauthorized("Invalid credentials");
+    if (!valid) return unauthorized("Invalid email or password");
 
-    if (user.status === "suspended") return unauthorized("Account suspended");
-    if (user.status === "banned") return unauthorized("Account banned");
+    // Block unverified users
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "EMAIL_NOT_VERIFIED",
+          message: "Please verify your email before logging in. Check your inbox for the verification link.",
+          data: { maskedEmail: maskEmail(email) },
+        },
+        { status: 403 }
+      );
+    }
+
+    if (user.status === "suspended") return unauthorized("Your account has been suspended. Contact support.");
+    if (user.status === "banned") return unauthorized("Your account has been banned.");
 
     const { accessToken, refreshToken } = await createSession(user);
 
-    // Build response first, then set cookies on it
     const response = NextResponse.json(
       { success: true, data: { role: user.role }, message: "Login successful" },
       { status: 200 }
@@ -45,4 +57,12 @@ export async function POST(req: NextRequest) {
     console.error("[POST /api/auth/login]", err);
     return serverError();
   }
+}
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return email;
+  const visible = local.slice(0, 2);
+  const masked = "*".repeat(Math.max(local.length - 2, 3));
+  return `${visible}${masked}@${domain}`;
 }

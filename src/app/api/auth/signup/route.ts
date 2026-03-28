@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { hashPassword } from "@/backend/auth/password";
-import { createSession } from "@/backend/auth/session";
 import { signupSchema } from "@/lib/validations/auth.schema";
 import { badRequest, serverError } from "@/lib/utils/api-response";
-import { AUTH_CONSTANTS } from "@/lib/auth/auth-constants";
-import { getAccessTokenCookieOptions, getRefreshTokenCookieOptions } from "@/lib/auth/auth-cookie";
 import { createEmailVerificationToken } from "@/backend/auth/tokens";
 import { sendMail, emailVerificationTemplate } from "@/backend/utils/mailer";
 
@@ -29,6 +26,7 @@ export async function POST(req: NextRequest) {
         email,
         passwordHash,
         role,
+        // emailVerified stays false until they click the link
         profile: { create: { fullName, phone } },
         ...(role === "seller" && {
           sellerProfile: { create: { shopName: `${fullName}'s Shop` } },
@@ -36,32 +34,43 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Send verification email (non-blocking)
-    createEmailVerificationToken(user.id)
-      .then((token) => {
-        const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/verify-email?token=${token}`;
-        return sendMail({
-          to: email,
-          subject: "KrishiHat — Verify Your Email",
-          html: emailVerificationTemplate(fullName, verifyUrl),
-        });
-      })
-      .catch((err) => console.error("[Signup email error]", err));
+    // Send verification email — await so we catch errors
+    try {
+      const token = await createEmailVerificationToken(user.id);
+      const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/verify-email?token=${token}`;
+      await sendMail({
+        to: email,
+        subject: "KrishiHat — Verify Your Email",
+        html: emailVerificationTemplate(fullName, verifyUrl),
+      });
+    } catch (emailErr) {
+      console.error("[Signup] Email send failed:", emailErr);
+      // Still create the account, but warn
+    }
 
-    const { accessToken, refreshToken } = await createSession(user);
-
-    // Set cookies on the response object directly
-    const response = NextResponse.json(
-      { success: true, data: { role: user.role }, message: "Account created successfully" },
+    // NO cookies set — user must verify email before login
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          email,
+          // Mask email for display: se***@gmail.com
+          maskedEmail: maskEmail(email),
+        },
+        message: "Account created. Please check your email to verify your account before logging in.",
+      },
       { status: 201 }
     );
-
-    response.cookies.set(AUTH_CONSTANTS.ACCESS_TOKEN_COOKIE, accessToken, getAccessTokenCookieOptions());
-    response.cookies.set(AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE, refreshToken, getRefreshTokenCookieOptions());
-
-    return response;
   } catch (err) {
     console.error("[POST /api/auth/signup]", err);
     return serverError();
   }
+}
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return email;
+  const visible = local.slice(0, 2);
+  const masked = "*".repeat(Math.max(local.length - 2, 3));
+  return `${visible}${masked}@${domain}`;
 }

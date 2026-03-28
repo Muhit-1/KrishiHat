@@ -1,16 +1,15 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { productSchema, type ProductInput } from "@/lib/validations/product.schema";
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 import { SectionHeader } from "@/components/common/section-header";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { BarChart2, Package, ShoppingBag, Gavel, MessageSquare, User, BadgeCheck, FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/common/empty-state";
+import { Package, ShoppingBag, Gavel, MessageSquare, BarChart2, User, BadgeCheck, FileText, Edit, Trash2 } from "lucide-react";
+import Link from "next/link";
 
 const sellerLinks = [
   { href: "/seller/dashboard", label: "Dashboard", icon: <BarChart2 className="h-4 w-4" /> },
@@ -24,125 +23,112 @@ const sellerLinks = [
   { href: "/seller/analytics", label: "Analytics", icon: <BarChart2 className="h-4 w-4" /> },
 ];
 
-export default function NewProductPage() {
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<ProductInput>({
-    resolver: zodResolver(productSchema),
-    defaultValues: { condition: "new", listingType: "fixed", unit: "kg", stock: 1 },
-  });
+const statusVariant: Record<string, any> = {
+  draft: "warning", active: "success", inactive: "default", rejected: "danger",
+};
 
-  const [categories, setCategories] = useState<any[]>([]);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const router = useRouter();
-  const selectedCategoryId = watch("categoryId");
+export default function SellerProductsPage() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch("/api/categories")
+  const fetchProducts = () => {
+    setLoading(true);
+    fetch("/api/seller/products")
       .then((r) => r.json())
-      .then((json) => { if (json.success) setCategories(json.data); });
-  }, []);
+      .then((json) => { if (json.success) setProducts(json.data.items); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
 
-  const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
+  useEffect(() => { fetchProducts(); }, []);
 
-  const onSubmit = async (data: ProductInput) => {
-    setServerError(null);
-    const res = await fetch("/api/products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    const json = await res.json();
-    if (json.success) {
-      router.push(`/seller/products`);
-    } else {
-      setServerError(json.message);
-    }
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this product? This cannot be undone.")) return;
+    setDeletingId(id);
+    await fetch(`/api/products/${id}`, { method: "DELETE" });
+    setDeletingId(null);
+    fetchProducts();
   };
 
   return (
     <DashboardLayout sidebarLinks={sellerLinks} sidebarTitle="Seller Panel">
-      <SectionHeader title="Add New Product" />
-      <Card className="max-w-2xl">
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <Input label="Product Title (English)" error={errors.title?.message} {...register("title")} />
-            <Input label="Product Title (Bengali)" placeholder="বাংলায় নাম (ঐচ্ছিক)" {...register("titleBn")} />
+      <SectionHeader
+        title="My Products"
+        action={
+          <Link href="/seller/products/new">
+            <Button size="sm">+ Add Product</Button>
+          </Link>
+        }
+      />
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">Category *</label>
-                <select {...register("categoryId")} className="h-10 px-3 rounded-md border border-input text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                  <option value="">Select category</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-                {errors.categoryId && <p className="text-xs text-destructive">{errors.categoryId.message}</p>}
-              </div>
-
-              {selectedCategory?.subcategories?.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium">Subcategory</label>
-                  <select {...register("subcategoryId")} className="h-10 px-3 rounded-md border border-input text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                    <option value="">Select subcategory</option>
-                    {selectedCategory.subcategories.map((s: any) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <Input label="Price (৳)" type="number" step="0.01" error={errors.price?.message} {...register("price")} />
-              <Input label="Stock" type="number" error={errors.stock?.message} {...register("stock")} />
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">Unit</label>
-                <select {...register("unit")} className="h-10 px-3 rounded-md border border-input text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                  {["kg", "g", "piece", "dozen", "liter", "bundle", "bag"].map((u) => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">Condition</label>
-                <select {...register("condition")} className="h-10 px-3 rounded-md border border-input text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                  <option value="new">New</option>
-                  <option value="used">Used</option>
-                  <option value="refurbished">Refurbished</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">Listing Type</label>
-                <select {...register("listingType")} className="h-10 px-3 rounded-md border border-input text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                  <option value="fixed">Fixed Price</option>
-                  {selectedCategory?.auctionAllowed && <option value="auction">Auction</option>}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">Description</label>
-              <textarea
-                {...register("description")}
-                rows={4}
-                className="px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                placeholder="Describe your product..."
-              />
-            </div>
-
-            {serverError && <p className="text-sm text-destructive">{serverError}</p>}
-
-            <div className="flex gap-3">
-              <Button type="submit" isLoading={isSubmitting}>Create Product</Button>
-              <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      {loading ? (
+        <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+      ) : products.length === 0 ? (
+        <EmptyState
+          icon={<Package className="h-12 w-12" />}
+          title="No products yet"
+          description="Add your first product to start selling."
+          action={<Link href="/seller/products/new"><Button>Add Product</Button></Link>}
+        />
+      ) : (
+        <div className="overflow-x-auto rounded-lg border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted">
+              <tr>
+                {["Product", "Category", "Price", "Stock", "Status", "Actions"].map((h) => (
+                  <th key={h} className="px-4 py-3 text-left font-medium text-muted-foreground">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {products.map((p: any) => (
+                <tr key={p.id} className="hover:bg-muted/30">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 bg-muted rounded overflow-hidden flex-shrink-0">
+                        {p.images?.[0] ? (
+                          <img src={p.images[0].url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <Package className="h-5 w-5 m-auto mt-2.5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate max-w-[160px]">{p.title}</p>
+                        <p className="text-xs text-muted-foreground">{p.unit}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.category?.name}</td>
+                  <td className="px-4 py-3 font-semibold text-primary">৳{Number(p.price).toFixed(2)}</td>
+                  <td className="px-4 py-3">{p.stock}</td>
+                  <td className="px-4 py-3">
+                    <Badge variant={statusVariant[p.status] || "default"}>{p.status}</Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <Link href={`/seller/products/${p.id}/edit`}>
+                        <Button size="sm" variant="outline" className="h-7 px-2">
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </Link>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-7 px-2"
+                        onClick={() => handleDelete(p.id)}
+                        isLoading={deletingId === p.id}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
