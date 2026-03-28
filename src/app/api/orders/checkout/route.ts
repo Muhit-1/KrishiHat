@@ -16,15 +16,19 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = checkoutSchema.safeParse(body);
     if (!parsed.success) {
-      return badRequest("Validation failed", parsed.error.flatten().fieldErrors as Record<string, string[]>);
+      return badRequest(
+        "Validation failed",
+        parsed.error.flatten().fieldErrors as Record<string, string[]>
+      );
     }
 
-    const orders = await placeOrder(user.id, parsed.data).catch((err) => {
+    const orders = await placeOrder(user.id, parsed.data).catch((err: Error) => {
       throw err;
     });
 
-    // Send order confirmation email (non-blocking)
-    prisma.user.findUnique({ where: { id: user.id }, include: { profile: true } })
+    // Send confirmation email (non-blocking)
+    prisma.user
+      .findUnique({ where: { id: user.id }, include: { profile: true } })
       .then((u) => {
         if (!u?.profile) return;
         const totalAmount = orders.reduce((sum, o) => sum + Number(o.totalAmount), 0);
@@ -42,13 +46,30 @@ export async function POST(req: NextRequest) {
         action: "ORDER_PLACED",
         entity: "Order",
         entityId: order.id,
-        newValue: { totalAmount: order.totalAmount, sellerId: order.sellerId },
+        newValue: {
+          totalAmount: Number(order.totalAmount),
+          sellerId: order.sellerId,
+          paymentMethod: parsed.data.paymentMethod,
+        },
       });
     }
 
-    return created(orders, "Order placed successfully");
+    return created(
+      {
+        orders,
+        paymentMethod: parsed.data.paymentMethod,
+        isPaid: orders[0]?.payment?.status === "paid",
+      },
+      "Order placed successfully"
+    );
   } catch (err: any) {
     if (err.message === "CART_EMPTY") return badRequest("Your cart is empty");
+    if (err.message?.startsWith("INSUFFICIENT_STOCK:")) {
+      return badRequest(`Not enough stock for: ${err.message.split(":")[1]}`);
+    }
+    if (err.message?.startsWith("PRODUCT_UNAVAILABLE:")) {
+      return badRequest(`Product no longer available: ${err.message.split(":")[1]}`);
+    }
     console.error("[POST /api/orders/checkout]", err);
     return serverError();
   }
