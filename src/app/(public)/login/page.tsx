@@ -7,10 +7,9 @@ import { loginSchema, type LoginInput } from "@/lib/validations/auth.schema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sprout, CheckCircle, XCircle, Mail } from "lucide-react";
-import { useState } from "react";
+import { Sprout, CheckCircle, XCircle, Mail, Clock } from "lucide-react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
 
 function LoginForm() {
   const router = useRouter();
@@ -20,6 +19,8 @@ function LoginForm() {
 
   const verified = searchParams.get("verified");
   const verifyError = searchParams.get("verify_error");
+  const reason = searchParams.get("reason");
+  const returnTo = searchParams.get("returnTo");
 
   const {
     register,
@@ -48,7 +49,12 @@ function LoginForm() {
           admin: "/admin/dashboard",
           super_admin: "/super-admin/dashboard",
         };
-        router.push(dashboardMap[json.data.role] || "/");
+        // Redirect to returnTo if available, otherwise to dashboard
+        const destination =
+          returnTo && returnTo.startsWith("/")
+            ? returnTo
+            : dashboardMap[json.data.role] || "/";
+        router.push(destination);
         router.refresh();
       } else if (json.code === "EMAIL_NOT_VERIFIED") {
         setUnverifiedEmail(json.data?.maskedEmail || null);
@@ -73,13 +79,28 @@ function LoginForm() {
         </CardHeader>
         <CardContent className="space-y-4">
 
+          {/* Session expired banner */}
+          {reason === "session_expired" && (
+            <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md">
+              <Clock className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-sm">Session expired</p>
+                <p className="text-xs mt-0.5">
+                  Your session has expired. Please log in again to continue.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Email verified success banner */}
           {verified === "1" && (
             <div className="flex items-start gap-3 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-md">
               <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-semibold text-sm">Email verified!</p>
-                <p className="text-xs mt-0.5">Your account is now active. You can log in below.</p>
+                <p className="text-xs mt-0.5">
+                  Your account is now active. You can log in below.
+                </p>
               </div>
             </div>
           )}
@@ -90,7 +111,9 @@ function LoginForm() {
               <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-semibold text-sm">Verification link expired</p>
-                <p className="text-xs mt-0.5">Log in to request a new verification link.</p>
+                <p className="text-xs mt-0.5">
+                  Please log in and request a new verification email.
+                </p>
               </div>
             </div>
           )}
@@ -100,7 +123,9 @@ function LoginForm() {
               <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-semibold text-sm">Already verified</p>
-                <p className="text-xs mt-0.5">Your email is already verified. Please log in.</p>
+                <p className="text-xs mt-0.5">
+                  Your email is already verified. Please log in.
+                </p>
               </div>
             </div>
           )}
@@ -110,23 +135,30 @@ function LoginForm() {
               <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-semibold text-sm">Invalid verification link</p>
-                <p className="text-xs mt-0.5">This link is invalid. Please sign up again or contact support.</p>
+                <p className="text-xs mt-0.5">
+                  This link is invalid. Please sign up again or contact support.
+                </p>
               </div>
             </div>
           )}
 
-          {/* Unverified email warning with resend option */}
+          {/* Unverified email warning */}
           {unverifiedEmail && (
             <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-md">
               <Mail className="h-5 w-5 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-semibold text-sm">Email not verified</p>
                 <p className="text-xs mt-1">
-                  We sent a link to <span className="font-medium">{unverifiedEmail}</span>.{" "}
+                  We sent a link to{" "}
+                  <span className="font-medium">{unverifiedEmail}</span>.{" "}
                   <button
                     onClick={async () => {
-                      await fetch("/api/auth/resend-verification", { method: "POST" });
-                      alert("Verification email resent! Check your inbox.");
+                      await fetch("/api/auth/resend-verification", {
+                        method: "POST",
+                      });
+                      alert(
+                        "Verification email resent! Check your inbox."
+                      );
                     }}
                     className="underline hover:no-underline font-medium"
                   >
@@ -153,7 +185,10 @@ function LoginForm() {
               {...register("password")}
             />
             <div className="flex justify-end">
-              <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+              <Link
+                href="/forgot-password"
+                className="text-xs text-primary hover:underline"
+              >
                 Forgot password?
               </Link>
             </div>
@@ -171,7 +206,10 @@ function LoginForm() {
 
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-primary hover:underline font-medium">
+            <Link
+              href="/signup"
+              className="text-primary hover:underline font-medium"
+            >
               Sign Up
             </Link>
           </p>
@@ -183,7 +221,13 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-[80vh] flex items-center justify-center">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-[80vh] flex items-center justify-center">
+          <div className="text-muted-foreground text-sm">Loading...</div>
+        </div>
+      }
+    >
       <LoginForm />
     </Suspense>
   );

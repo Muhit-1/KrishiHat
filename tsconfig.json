@@ -33,7 +33,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-, "next.config.ts", "src/app/(public)/marketplace", "src/app/buyer/profile"  ],
+, "next.config.mjs", "src/app/(public)/marketplace", "src/app/buyer/profile"  ],
   "exclude": [
     "node_modules"
   ]

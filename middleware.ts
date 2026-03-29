@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAccessToken } from "@/backend/auth/jwt";
 import { AUTH_CONSTANTS } from "@/lib/auth/auth-constants";
 
-// Route → minimum required role
+// Route prefix → allowed roles
 const ROUTE_ROLE_MAP: Record<string, string[]> = {
-  "/buyer":      ["buyer", "admin", "super_admin"],
-  "/seller":     ["seller", "admin", "super_admin"],
-  "/moderator":  ["moderator", "admin", "super_admin"],
-  "/admin":      ["admin", "super_admin"],
-  "/super-admin":["super_admin"],
+  "/buyer":       ["buyer", "admin", "super_admin"],
+  "/seller":      ["seller", "admin", "super_admin"],
+  "/moderator":   ["moderator", "admin", "super_admin"],
+  "/admin":       ["admin", "super_admin"],
+  "/super-admin": ["super_admin"],
 };
 
 export function middleware(request: NextRequest) {
@@ -19,23 +19,27 @@ export function middleware(request: NextRequest) {
     pathname.startsWith(prefix)
   );
 
+  // Not a protected route — allow through
   if (!matchedPrefix) return NextResponse.next();
 
   const token = request.cookies.get(AUTH_CONSTANTS.ACCESS_TOKEN_COOKIE)?.value;
 
+  // No token → redirect to login with return URL
   if (!token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("returnTo", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   try {
     const payload = verifyAccessToken(token);
 
-    // Check suspension
+    // Suspended or banned → redirect to suspended page
     if (payload.status === "suspended" || payload.status === "banned") {
       return NextResponse.redirect(new URL("/suspended", request.url));
     }
 
-    // Check role
+    // Wrong role → redirect to unauthorized page
     const allowedRoles = ROUTE_ROLE_MAP[matchedPrefix];
     if (!allowedRoles.includes(payload.role)) {
       return NextResponse.redirect(new URL("/unauthorized", request.url));
@@ -43,8 +47,11 @@ export function middleware(request: NextRequest) {
 
     return NextResponse.next();
   } catch {
-    // Token expired or invalid
-    return NextResponse.redirect(new URL("/login", request.url));
+    // Token expired or tampered → redirect to login
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("returnTo", pathname);
+    loginUrl.searchParams.set("reason", "session_expired");
+    return NextResponse.redirect(loginUrl);
   }
 }
 
