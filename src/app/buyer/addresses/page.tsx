@@ -66,9 +66,26 @@ export default function AddressesPage() {
 
   const fetchAddresses = () => {
     setLoading(true);
+
     fetch("/api/users/addresses")
       .then((r) => r.json())
-      .then((json) => { if (json.success) setAddresses(json.data); })
+      .then((json) => {
+        if (!json.success) {
+          setAddresses([]);
+          return;
+        }
+
+        const nextAddresses = Array.isArray(json.data)
+          ? json.data
+          : Array.isArray(json.data?.addresses)
+            ? json.data.addresses
+            : [];
+
+        setAddresses(nextAddresses);
+      })
+      .catch(() => {
+        setAddresses([]);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -124,7 +141,7 @@ export default function AddressesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2].map((i) => <Skeleton key={i} className="h-36 w-full rounded-lg" />)}
         </div>
-      ) : addresses.length === 0 ? (
+      ) : !Array.isArray(addresses) || addresses.length === 0 ? (
         <EmptyState
           icon={<MapPin className="h-12 w-12" />}
           title="No addresses saved"
