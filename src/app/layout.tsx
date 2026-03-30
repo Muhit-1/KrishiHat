@@ -4,6 +4,9 @@ import "./globals.css";
 import { Navbar } from "@/components/layouts/navbar";
 import { Footer } from "@/components/layouts/footer";
 import { LocaleProvider } from "@/providers/locale-provider";
+import { ToastProvider } from "@/components/ui/toast";
+import { SessionProvider } from "@/providers/session-provider";
+import { EmailVerificationBanner } from "@/components/common/email-verification-banner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -13,21 +16,8 @@ export const metadata: Metadata = {
     template: "%s | KrishiHat",
   },
   description:
-    "Buy and sell agricultural products, bid at live auctions, and check daily market prices across Bangladesh. কৃষিহাট — বাংলাদেশের কৃষি মার্কেটপ্লেস",
-  keywords: [
-    "agriculture",
-    "bangladesh",
-    "farming",
-    "marketplace",
-    "krishihat",
-    "কৃষি",
-    "বাংলাদেশ",
-  ],
-  openGraph: {
-    title: "KrishiHat — Bangladesh Agricultural Marketplace",
-    description: "Buy and sell agricultural products across Bangladesh",
-    type: "website",
-  },
+    "Buy and sell agricultural products, bid at live auctions, and check daily market prices across Bangladesh.",
+  keywords: ["agriculture", "bangladesh", "farming", "marketplace", "krishihat"],
 };
 
 export default function RootLayout({
@@ -53,9 +43,14 @@ export default function RootLayout({
         className={`${inter.variable} font-sans antialiased flex flex-col min-h-screen`}
       >
         <LocaleProvider>
-          <Navbar />
-          <div className="flex-1">{children}</div>
-          <Footer />
+          <ToastProvider>
+            <SessionProvider>
+              <Navbar />
+              <EmailVerificationBanner />
+              <div className="flex-1">{children}</div>
+              <Footer />
+            </SessionProvider>
+          </ToastProvider>
         </LocaleProvider>
       </body>
     </html>

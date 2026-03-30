@@ -1,19 +1,37 @@
 "use client";
 
 import { useLocale } from "@/providers/locale-provider";
+import { cn } from "@/lib/utils/cn";
 
 export function LanguageToggle() {
   const { locale, setLocale } = useLocale();
 
   return (
-    <button
-      onClick={() => setLocale(locale === "en" ? "bn" : "en")}
-      className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border hover:bg-muted transition-colors"
-      title="Toggle language"
-    >
-      <span className={locale === "en" ? "text-primary font-bold" : "text-muted-foreground"}>EN</span>
-      <span className="text-muted-foreground">/</span>
-      <span className={locale === "bn" ? "text-primary font-bold" : "text-muted-foreground"}>বাং</span>
-    </button>
+    <div className="flex items-center border rounded-full overflow-hidden text-xs font-medium">
+      <button
+        onClick={() => setLocale("en")}
+        className={cn(
+          "px-2.5 py-1 transition-colors",
+          locale === "en"
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:bg-muted"
+        )}
+        title="Switch to English"
+      >
+        EN
+      </button>
+      <button
+        onClick={() => setLocale("bn")}
+        className={cn(
+          "px-2.5 py-1 transition-colors",
+          locale === "bn"
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:bg-muted"
+        )}
+        title="বাংলায় পরিবর্তন করুন"
+      >
+        বাং
+      </button>
+    </div>
   );
 }

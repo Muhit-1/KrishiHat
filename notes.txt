@@ -1,0 +1,3 @@
+after changing in the seeddata 
+npx prisma generate
+npm run db:seed

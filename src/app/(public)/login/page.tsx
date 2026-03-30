@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sprout, CheckCircle, XCircle, Mail, Clock } from "lucide-react";
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useToast } from "@/components/ui/toast";
 
 function LoginForm() {
   const router = useRouter();
@@ -22,6 +23,7 @@ function LoginForm() {
   const reason = searchParams.get("reason");
   const returnTo = searchParams.get("returnTo");
 
+
   const {
     register,
     handleSubmit,
@@ -29,6 +31,9 @@ function LoginForm() {
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   });
+
+  // Inside LoginForm component — replace onSubmit:
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const onSubmit = async (data: LoginInput) => {
     setServerError(null);
@@ -42,6 +47,7 @@ function LoginForm() {
       const json = await res.json();
 
       if (json.success) {
+        toastSuccess("Welcome back!", "You are now logged in.");
         const dashboardMap: Record<string, string> = {
           buyer: "/buyer/dashboard",
           seller: "/seller/dashboard",
@@ -49,7 +55,6 @@ function LoginForm() {
           admin: "/admin/dashboard",
           super_admin: "/super-admin/dashboard",
         };
-        // Redirect to returnTo if available, otherwise to dashboard
         const destination =
           returnTo && returnTo.startsWith("/")
             ? returnTo
@@ -60,9 +65,11 @@ function LoginForm() {
         setUnverifiedEmail(json.data?.maskedEmail || null);
         setServerError(json.message);
       } else {
+        toastError("Login failed", json.message || "Invalid credentials.");
         setServerError(json.message || "Login failed");
       }
     } catch {
+      toastError("Network error", "Please try again.");
       setServerError("Network error. Please try again.");
     }
   };

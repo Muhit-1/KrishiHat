@@ -1,15 +1,31 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { AuthUser } from "@/types";
+import type { Role } from "@/types";
+
+interface AuthUser {
+  id: string;
+  email: string;
+  role: Role;
+  status: string;
+  emailVerified: boolean;
+}
+
+interface AuthProfile {
+  fullName: string;
+  avatarUrl?: string | null;
+}
 
 interface AuthState {
   user: AuthUser | null;
-  profile: { fullName: string; avatarUrl?: string | null } | null;
+  profile: AuthProfile | null;
   loading: boolean;
 }
 
-export function useAuth(): AuthState & { logout: () => Promise<void>; refetch: () => void } {
+export function useAuth(): AuthState & {
+  logout: () => Promise<void>;
+  refetch: () => void;
+} {
   const [state, setState] = useState<AuthState>({
     user: null,
     profile: null,
@@ -25,8 +41,9 @@ export function useAuth(): AuthState & { logout: () => Promise<void>; refetch: (
           user: {
             id: json.data.id,
             email: json.data.email,
-            role: json.data.role,
+            role: json.data.role as Role,
             status: json.data.status,
+            emailVerified: json.data.emailVerified,
           },
           profile: json.data.profile
             ? {
