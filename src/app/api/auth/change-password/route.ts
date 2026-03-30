@@ -4,6 +4,8 @@ import { comparePassword, hashPassword } from "@/backend/auth/password";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { badRequest, unauthorized, serverError } from "@/lib/utils/api-response";
 import { createAuditLog } from "@/lib/utils/audit";
+import { getClearCookieOptions } from "@/lib/auth/auth-cookie";   // ADD THIS
+import { AUTH_CONSTANTS } from "@/lib/auth/auth-constants";       // ADD THIS
 import { z } from "zod";
 
 const schema = z
@@ -42,23 +44,11 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findUnique({ where: { id: authUser.id } });
     if (!user) return unauthorized();
 
-    // Verify current password
-    const valid = await comparePassword(
-      parsed.data.currentPassword,
-      user.passwordHash
-    );
-    if (!valid) {
-      return badRequest("Current password is incorrect");
-    }
+    const valid = await comparePassword(parsed.data.currentPassword, user.passwordHash);
+    if (!valid) return badRequest("Current password is incorrect");
 
-    // Prevent using same password
-    const isSame = await comparePassword(
-      parsed.data.newPassword,
-      user.passwordHash
-    );
-    if (isSame) {
-      return badRequest("New password must be different from current password");
-    }
+    const isSame = await comparePassword(parsed.data.newPassword, user.passwordHash);
+    if (isSame) return badRequest("New password must be different from current password");
 
     const newHash = await hashPassword(parsed.data.newPassword);
 
@@ -67,7 +57,7 @@ export async function POST(req: NextRequest) {
       data: { passwordHash: newHash },
     });
 
-    // Revoke all other sessions for security
+    // Revoke all sessions in DB
     await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
 
     await createAuditLog({
@@ -77,10 +67,15 @@ export async function POST(req: NextRequest) {
       entityId: user.id,
     });
 
-    return NextResponse.json(
+    // ✅ NOW ALSO CLEAR THE COOKIES
+    const response = NextResponse.json(
       { success: true, message: "Password changed. Please log in again." },
       { status: 200 }
     );
+    response.cookies.set(AUTH_CONSTANTS.ACCESS_TOKEN_COOKIE, "", getClearCookieOptions());
+    response.cookies.set(AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE, "", getClearCookieOptions());
+
+    return response;
   } catch (err) {
     console.error("[POST /api/auth/change-password]", err);
     return serverError();
