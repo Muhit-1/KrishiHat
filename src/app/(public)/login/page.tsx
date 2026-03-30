@@ -11,18 +11,20 @@ import { Sprout, CheckCircle, XCircle, Mail, Clock } from "lucide-react";
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
+import { useAuth } from "@/hooks/use-auth";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [serverError, setServerError] = useState<string | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const { refetch } = useAuth();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const verified = searchParams.get("verified");
   const verifyError = searchParams.get("verify_error");
   const reason = searchParams.get("reason");
   const returnTo = searchParams.get("returnTo");
-
 
   const {
     register,
@@ -32,22 +34,24 @@ function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  // Inside LoginForm component — replace onSubmit:
-  const { success: toastSuccess, error: toastError } = useToast();
-
   const onSubmit = async (data: LoginInput) => {
     setServerError(null);
     setUnverifiedEmail(null);
+
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+
       const json = await res.json();
 
       if (json.success) {
         toastSuccess("Welcome back!", "You are now logged in.");
+
+        await refetch();
+
         const dashboardMap: Record<string, string> = {
           buyer: "/buyer/dashboard",
           seller: "/seller/dashboard",
@@ -55,12 +59,13 @@ function LoginForm() {
           admin: "/admin/dashboard",
           super_admin: "/super-admin/dashboard",
         };
+
         const destination =
           returnTo && returnTo.startsWith("/")
             ? returnTo
             : dashboardMap[json.data.role] || "/";
+
         router.push(destination);
-        router.refresh();
       } else if (json.code === "EMAIL_NOT_VERIFIED") {
         setUnverifiedEmail(json.data?.maskedEmail || null);
         setServerError(json.message);
@@ -85,8 +90,6 @@ function LoginForm() {
           <p className="text-muted-foreground text-sm">Sign in to KrishiHat</p>
         </CardHeader>
         <CardContent className="space-y-4">
-
-          {/* Session expired banner */}
           {reason === "session_expired" && (
             <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md">
               <Clock className="h-5 w-5 mt-0.5 flex-shrink-0" />
@@ -99,7 +102,6 @@ function LoginForm() {
             </div>
           )}
 
-          {/* Email verified success banner */}
           {verified === "1" && (
             <div className="flex items-start gap-3 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-md">
               <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
@@ -112,7 +114,6 @@ function LoginForm() {
             </div>
           )}
 
-          {/* Verification error banners */}
           {verifyError === "expired" && (
             <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md">
               <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
@@ -149,7 +150,6 @@ function LoginForm() {
             </div>
           )}
 
-          {/* Unverified email warning */}
           {unverifiedEmail && (
             <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-md">
               <Mail className="h-5 w-5 mt-0.5 flex-shrink-0" />
@@ -163,9 +163,7 @@ function LoginForm() {
                       await fetch("/api/auth/resend-verification", {
                         method: "POST",
                       });
-                      alert(
-                        "Verification email resent! Check your inbox."
-                      );
+                      alert("Verification email resent! Check your inbox.");
                     }}
                     className="underline hover:no-underline font-medium"
                   >
@@ -191,6 +189,7 @@ function LoginForm() {
               error={errors.password?.message}
               {...register("password")}
             />
+
             <div className="flex justify-end">
               <Link
                 href="/forgot-password"

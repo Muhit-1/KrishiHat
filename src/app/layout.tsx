@@ -6,6 +6,7 @@ import { Footer } from "@/components/layouts/footer";
 import { LocaleProvider } from "@/providers/locale-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { SessionProvider } from "@/providers/session-provider";
+import { AuthProvider } from "@/providers/auth-provider";
 import { EmailVerificationBanner } from "@/components/common/email-verification-banner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -45,10 +46,12 @@ export default function RootLayout({
         <LocaleProvider>
           <ToastProvider>
             <SessionProvider>
-              <Navbar />
-              <EmailVerificationBanner />
-              <div className="flex-1">{children}</div>
-              <Footer />
+              <AuthProvider>
+                <Navbar />
+                <EmailVerificationBanner />
+                <div className="flex-1">{children}</div>
+                <Footer />
+              </AuthProvider>
             </SessionProvider>
           </ToastProvider>
         </LocaleProvider>
