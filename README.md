@@ -1,31 +1,3 @@
-I'll analyze your entire project thoroughly. Let me start by examining key files to understand the structure and requirements.    
-
-Read [](file:///d%3A/Projects_file/Capstone/krishihat/package.json)
-
-Read [](file:///d%3A/Projects_file/Capstone/krishihat/docs/database-design.md)
-
-Read [](file:///d%3A/Projects_file/Capstone/krishihat/docs/architecture.md)
-
-Read [](file:///d%3A/Projects_file/Capstone/krishihat/README.md#1-1), lines 1 to 50
-
-Read [](file:///d%3A/Projects_file/Capstone/krishihat/docs/roles-permissions.md)
-
-Read [](file:///d%3A/Projects_file/Capstone/krishihat/docs/api-spec.md)
-
-Read [](file:///d%3A/Projects_file/Capstone/krishihat/prisma/schema.prisma#1-1), lines 1 to 60
-
-Read [](file:///d%3A/Projects_file/Capstone/krishihat/src/app/api)
-
-Read [](file:///d%3A/Projects_file/Capstone/krishihat/src/backend/services)
-
-Read [](file:///d%3A/Projects_file/Capstone/krishihat/src/types/index.ts)
-
-Read [](file:///d%3A/Projects_file/Capstone/krishihat/middleware.ts#1-1), lines 1 to 60
-
-Now I'll provide you with a comprehensive project analysis:
-
----
-
 # **KrishiHat Project — Complete Analysis & Breakdown**
 
 ## **1. PROJECT REQUIREMENTS**

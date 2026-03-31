@@ -1,0 +1,35 @@
+
+
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_NAME=KrishiHat
+
+# Database
+DATABASE_URL="mysql://root:password@localhost:3306/krishihat"
+
+# JWT
+JWT_ACCESS_SECRET=your_access_secret_here_change_in_production
+JWT_REFRESH_SECRET=your_refresh_secret_here_change_in_production
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Cookies
+COOKIE_SECURE=false
+COOKIE_DOMAIN=localhost
+
+# Upload
+UPLOAD_DIR=public/uploads
+MAX_FILE_SIZE_MB=5
+
+# App defaults
+DEFAULT_LOCALE=en
+
+# Gmail SMTP
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=yourmail
+SMTP_PASS=password
+SMTP_FROM="KrishiHat <yourmail@gmail.com>"
+
+# Frontend URL (for reset links)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
