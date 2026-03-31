@@ -30,6 +30,3 @@ SMTP_PORT=587
 SMTP_USER=yourmail
 SMTP_PASS=password
 SMTP_FROM="KrishiHat <yourmail@gmail.com>"
-
-# Frontend URL (for reset links)
-NEXT_PUBLIC_APP_URL=http://localhost:3000
