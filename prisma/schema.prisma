@@ -127,7 +127,7 @@ model UserProfile {
   division    String?
   district    String?
   upazila     String?
-  address     String?
+  address     String?   @db.LongText
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

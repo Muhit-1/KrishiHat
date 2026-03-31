@@ -1,6 +1,12 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { ok, created, badRequest, unauthorized, serverError } from "@/lib/utils/api-response";
+import {
+  ok,
+  created,
+  badRequest,
+  unauthorized,
+  serverError,
+} from "@/lib/utils/api-response";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { z } from "zod";
 
@@ -13,27 +19,80 @@ const addressSchema = z.object({
   isDefault: z.boolean().default(false),
 });
 
+type SavedAddress = {
+  id: string;
+  label: string;
+  fullAddress: string;
+  district: string;
+  upazila: string;
+  phone: string;
+  isDefault: boolean;
+  createdAt: string;
+};
+
+function safeParseAddresses(profile: {
+  address?: string | null;
+  district?: string | null;
+  upazila?: string | null;
+  phone?: string | null;
+} | null): SavedAddress[] {
+  if (!profile?.address) return [];
+
+  try {
+    const parsed = JSON.parse(profile.address);
+
+    if (Array.isArray(parsed)) {
+      return parsed.filter(Boolean).map((item: any) => ({
+        id: String(item.id ?? Date.now()),
+        label: String(item.label ?? "Address"),
+        fullAddress: String(item.fullAddress ?? ""),
+        district: String(item.district ?? ""),
+        upazila: String(item.upazila ?? ""),
+        phone: String(item.phone ?? ""),
+        isDefault: Boolean(item.isDefault),
+        createdAt: String(item.createdAt ?? new Date().toISOString()),
+      }));
+    }
+  } catch {
+    // Old profile address format: plain text in userProfile.address
+  }
+
+  const plainAddress = profile.address.trim();
+  if (!plainAddress) return [];
+
+  return [
+    {
+      id: "legacy-profile-address",
+      label: "Saved Address",
+      fullAddress: plainAddress,
+      district: profile.district ?? "",
+      upazila: profile.upazila ?? "",
+      phone: profile.phone ?? "",
+      isDefault: true,
+      createdAt: new Date().toISOString(),
+    },
+  ];
+}
+
 export async function GET(_req: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) return unauthorized();
 
-    // Addresses are stored in userProfile.address as JSON array
     const profile = await prisma.userProfile.findUnique({
       where: { userId: user.id },
+      select: {
+        address: true,
+        district: true,
+        upazila: true,
+        phone: true,
+      },
     });
 
-    let addresses: any[] = [];
-    try {
-      if (profile?.address) {
-        addresses = JSON.parse(profile.address);
-      }
-    } catch {
-      addresses = [];
-    }
-
+    const addresses = safeParseAddresses(profile);
     return ok(addresses);
   } catch (err) {
+    console.error("[GET /api/users/addresses]", err);
     return serverError();
   }
 }
@@ -45,6 +104,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const parsed = addressSchema.safeParse(body);
+
     if (!parsed.success) {
       return badRequest(
         "Validation failed",
@@ -54,34 +114,42 @@ export async function POST(req: NextRequest) {
 
     const profile = await prisma.userProfile.findUnique({
       where: { userId: user.id },
+      select: {
+        id: true,
+        address: true,
+        district: true,
+        upazila: true,
+        phone: true,
+      },
     });
 
-    let addresses: any[] = [];
-    try {
-      if (profile?.address) addresses = JSON.parse(profile.address);
-    } catch {
-      addresses = [];
+    if (!profile) {
+      return badRequest("User profile not found");
     }
 
-    const newAddress = {
-      id: Date.now().toString(),
-      ...parsed.data,
+    let addresses = safeParseAddresses(profile);
+
+    const newAddress: SavedAddress = {
+      id: `${Date.now()}`,
+      label: parsed.data.label.trim(),
+      fullAddress: parsed.data.fullAddress.trim(),
+      district: parsed.data.district.trim(),
+      upazila: (parsed.data.upazila ?? "").trim(),
+      phone: (parsed.data.phone ?? "").trim(),
+      isDefault: parsed.data.isDefault ?? false,
       createdAt: new Date().toISOString(),
     };
 
-    // If new address is default, unset others
-    if (parsed.data.isDefault) {
+    if (newAddress.isDefault || addresses.length === 0) {
       addresses = addresses.map((a) => ({ ...a, isDefault: false }));
+      newAddress.isDefault = true;
     }
 
     addresses.push(newAddress);
 
-    await prisma.userProfile.upsert({
+    await prisma.userProfile.update({
       where: { userId: user.id },
-      update: { address: JSON.stringify(addresses) },
-      create: {
-        userId: user.id,
-        fullName: "User",
+      data: {
         address: JSON.stringify(addresses),
       },
     });
@@ -103,24 +171,42 @@ export async function DELETE(req: NextRequest) {
 
     const profile = await prisma.userProfile.findUnique({
       where: { userId: user.id },
+      select: {
+        address: true,
+        district: true,
+        upazila: true,
+        phone: true,
+      },
     });
 
-    let addresses: any[] = [];
-    try {
-      if (profile?.address) addresses = JSON.parse(profile.address);
-    } catch {
-      addresses = [];
+    if (!profile) {
+      return badRequest("User profile not found");
     }
 
-    const filtered = addresses.filter((a) => a.id !== id);
+    let addresses = safeParseAddresses(profile);
+    const toDeleteId = String(id);
+
+    const existing = addresses.find((a) => a.id === toDeleteId);
+    if (!existing) {
+      return badRequest("Address not found");
+    }
+
+    addresses = addresses.filter((a) => a.id !== toDeleteId);
+
+    if (addresses.length > 0 && !addresses.some((a) => a.isDefault)) {
+      addresses[0].isDefault = true;
+    }
 
     await prisma.userProfile.update({
       where: { userId: user.id },
-      data: { address: JSON.stringify(filtered) },
+      data: {
+        address: JSON.stringify(addresses),
+      },
     });
 
     return ok(null, "Address deleted");
   } catch (err) {
+    console.error("[DELETE /api/users/addresses]", err);
     return serverError();
   }
 }

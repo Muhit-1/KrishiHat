@@ -15,8 +15,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/common/empty-state";
 import { useToast } from "@/components/ui/toast";
 import {
-  ShoppingBag, ShoppingCart, MessageSquare,
-  MapPin, Flag, Plus, Trash2, Home,
+  ShoppingBag,
+  ShoppingCart,
+  MessageSquare,
+  MapPin,
+  Flag,
+  Plus,
+  Trash2,
+  Home,
 } from "lucide-react";
 
 const buyerLinks = [
@@ -40,15 +46,42 @@ const addressSchema = z.object({
 
 type AddressForm = z.infer<typeof addressSchema>;
 
+type SavedAddress = {
+  id: string;
+  label: string;
+  fullAddress: string;
+  district: string;
+  upazila?: string;
+  phone?: string;
+  isDefault: boolean;
+  createdAt: string;
+};
+
 const BD_DISTRICTS = [
-  "Dhaka", "Chittagong", "Sylhet", "Rajshahi", "Khulna",
-  "Barisal", "Rangpur", "Mymensingh", "Comilla", "Gazipur",
-  "Narayanganj", "Tangail", "Bogura", "Jessore", "Noakhali",
-  "Dinajpur", "Pabna", "Jashore", "Faridpur", "Brahmanbaria",
+  "Dhaka",
+  "Chittagong",
+  "Sylhet",
+  "Rajshahi",
+  "Khulna",
+  "Barisal",
+  "Rangpur",
+  "Mymensingh",
+  "Comilla",
+  "Gazipur",
+  "Narayanganj",
+  "Tangail",
+  "Bogura",
+  "Jessore",
+  "Noakhali",
+  "Dinajpur",
+  "Pabna",
+  "Jashore",
+  "Faridpur",
+  "Brahmanbaria",
 ];
 
 export default function AddressesPage() {
-  const [addresses, setAddresses] = useState<any[]>([]);
+  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -61,68 +94,97 @@ export default function AddressesPage() {
     formState: { errors, isSubmitting },
   } = useForm<AddressForm>({
     resolver: zodResolver(addressSchema),
-    defaultValues: { isDefault: false },
+    defaultValues: {
+      label: "",
+      fullAddress: "",
+      district: "",
+      upazila: "",
+      phone: "",
+      isDefault: false,
+    },
   });
 
-  const fetchAddresses = () => {
-    setLoading(true);
+  const fetchAddresses = async () => {
+    try {
+      setLoading(true);
 
-    fetch("/api/users/addresses")
-      .then((r) => r.json())
-      .then((json) => {
-        if (!json.success) {
-          setAddresses([]);
-          return;
-        }
+      const res = await fetch("/api/users/addresses", {
+        method: "GET",
+        cache: "no-store",
+      });
 
-        const nextAddresses = Array.isArray(json.data)
-          ? json.data
-          : Array.isArray(json.data?.addresses)
-            ? json.data.addresses
-            : [];
+      const json = await res.json();
 
-        setAddresses(nextAddresses);
-      })
-      .catch(() => {
+      if (!json.success) {
         setAddresses([]);
-      })
-      .finally(() => setLoading(false));
+        return;
+      }
+
+      const nextAddresses = Array.isArray(json.data)
+        ? json.data
+        : Array.isArray(json.data?.addresses)
+          ? json.data.addresses
+          : [];
+
+      setAddresses(nextAddresses);
+    } catch {
+      setAddresses([]);
+      error("Failed", "Could not load saved addresses.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchAddresses(); }, []);
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
 
   const onSubmit = async (data: AddressForm) => {
-    const res = await fetch("/api/users/addresses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    const json = await res.json();
-    if (json.success) {
-      success("Address saved!");
-      setIsModalOpen(false);
-      reset();
-      fetchAddresses();
-    } else {
-      error("Failed", json.message);
+    try {
+      const res = await fetch("/api/users/addresses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        success("Address saved!");
+        setIsModalOpen(false);
+        reset();
+        fetchAddresses();
+      } else {
+        error("Failed", json.message || "Could not save address.");
+      }
+    } catch {
+      error("Failed", "Could not save address.");
     }
   };
 
   const handleDelete = async (id: string) => {
-    setDeleting(id);
-    const res = await fetch("/api/users/addresses", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    const json = await res.json();
-    if (json.success) {
-      success("Address deleted");
-      fetchAddresses();
-    } else {
-      error("Failed to delete");
+    try {
+      setDeleting(id);
+
+      const res = await fetch("/api/users/addresses", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        success("Address deleted");
+        fetchAddresses();
+      } else {
+        error("Failed", json.message || "Failed to delete address.");
+      }
+    } catch {
+      error("Failed", "Failed to delete address.");
+    } finally {
+      setDeleting(null);
     }
-    setDeleting(null);
   };
 
   return (
@@ -130,42 +192,58 @@ export default function AddressesPage() {
       <SectionHeader
         title="Delivery Addresses"
         action={
-          <Button size="sm" onClick={() => setIsModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button
+            size="sm"
+            onClick={() => {
+              reset();
+              setIsModalOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
             Add Address
           </Button>
         }
       />
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2].map((i) => <Skeleton key={i} className="h-36 w-full rounded-lg" />)}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {[1, 2].map((i) => (
+            <Skeleton key={i} className="h-36 w-full rounded-lg" />
+          ))}
         </div>
-      ) : !Array.isArray(addresses) || addresses.length === 0 ? (
+      ) : addresses.length === 0 ? (
         <EmptyState
           icon={<MapPin className="h-12 w-12" />}
           title="No addresses saved"
           description="Add delivery addresses for faster checkout."
           action={
-            <Button onClick={() => setIsModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button
+              onClick={() => {
+                reset();
+                setIsModalOpen(true);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
               Add First Address
             </Button>
           }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {addresses.map((addr: any) => (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {addresses.map((addr) => (
             <Card key={addr.id} className={addr.isDefault ? "border-primary" : ""}>
               <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-2">
+                <div className="mb-2 flex items-start justify-between">
                   <div className="flex items-center gap-2">
                     <Home className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-sm">{addr.label}</span>
+                    <span className="text-sm font-semibold">{addr.label}</span>
                     {addr.isDefault && (
-                      <Badge variant="success" className="text-xs">Default</Badge>
+                      <Badge variant="success" className="text-xs">
+                        Default
+                      </Badge>
                     )}
                   </div>
+
                   <Button
                     size="sm"
                     variant="ghost"
@@ -176,12 +254,16 @@ export default function AddressesPage() {
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
+
                 <p className="text-sm text-muted-foreground">{addr.fullAddress}</p>
+
                 <p className="text-sm text-muted-foreground">
-                  {addr.upazila && `${addr.upazila}, `}{addr.district}
+                  {addr.upazila ? `${addr.upazila}, ` : ""}
+                  {addr.district}
                 </p>
+
                 {addr.phone && (
-                  <p className="text-xs text-muted-foreground mt-1">📞 {addr.phone}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">📞 {addr.phone}</p>
                 )}
               </CardContent>
             </Card>
@@ -189,10 +271,12 @@ export default function AddressesPage() {
         </div>
       )}
 
-      {/* Add Address Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => { setIsModalOpen(false); reset(); }}
+        onClose={() => {
+          setIsModalOpen(false);
+          reset();
+        }}
         title="Add New Address"
       >
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
@@ -209,7 +293,7 @@ export default function AddressesPage() {
               {...register("fullAddress")}
               rows={3}
               placeholder="House, Road, Area..."
-              className="px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              className="resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
             {errors.fullAddress && (
               <p className="text-xs text-destructive">{errors.fullAddress.message}</p>
@@ -221,17 +305,20 @@ export default function AddressesPage() {
               <label className="text-sm font-medium">District *</label>
               <select
                 {...register("district")}
-                className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">Select district</option>
                 {BD_DISTRICTS.map((d) => (
-                  <option key={d} value={d}>{d}</option>
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
                 ))}
               </select>
               {errors.district && (
                 <p className="text-xs text-destructive">{errors.district.message}</p>
               )}
             </div>
+
             <Input
               label="Upazila / Thana"
               {...register("upazila")}
@@ -253,7 +340,7 @@ export default function AddressesPage() {
               {...register("isDefault")}
               className="h-4 w-4 rounded border-input"
             />
-            <label htmlFor="isDefault" className="text-sm cursor-pointer">
+            <label htmlFor="isDefault" className="cursor-pointer text-sm">
               Set as default address
             </label>
           </div>
@@ -262,10 +349,14 @@ export default function AddressesPage() {
             <Button type="submit" isLoading={isSubmitting} className="flex-1">
               Save Address
             </Button>
+
             <Button
               type="button"
               variant="outline"
-              onClick={() => { setIsModalOpen(false); reset(); }}
+              onClick={() => {
+                setIsModalOpen(false);
+                reset();
+              }}
             >
               Cancel
             </Button>
