@@ -138,7 +138,7 @@ export default function MarketplacePage() {
                     !selectedCategory ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"
                   )}
                 >
-                  All Categories
+                  All Products
                 </button>
                 {categories.map((cat) => (
                   <button
