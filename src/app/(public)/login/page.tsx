@@ -53,7 +53,7 @@ function LoginForm() {
         await refetch();
 
         const dashboardMap: Record<string, string> = {
-          buyer: "/buyer/dashboard",
+          buyer: "/marketplace",
           seller: "/seller/dashboard",
           moderator: "/moderator/dashboard",
           admin: "/admin/dashboard",

@@ -22,6 +22,7 @@ import {
   Smartphone,
   Banknote,
   Package,
+  Home,
 } from "lucide-react";
 import { useCart } from "@/features/cart/hooks/use-cart";
 import Link from "next/link";
@@ -72,6 +73,16 @@ const PAYMENT_METHODS = [
 
 type PaymentMethodId = "cod" | "bkash" | "nagad";
 
+type SavedAddress = {
+  id: string;
+  label: string;
+  fullAddress: string;
+  district: string;
+  upazila?: string;
+  phone?: string;
+  isDefault: boolean;
+};
+
 export default function CheckoutPage() {
   const { cart, loading: cartLoading, total } = useCart();
   const router = useRouter();
@@ -79,15 +90,66 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
+  // Saved addresses state
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(true);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<CheckoutInput>({
     resolver: zodResolver(checkoutSchema),
-    defaultValues: { paymentMethod: "cod" },
+    defaultValues: { paymentMethod: "cod", deliveryAddress: "" },
   });
+
+  // Fetch saved addresses and prefill default
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      try {
+        const res = await fetch("/api/users/addresses");
+        const json = await res.json();
+        if (json.success) {
+          const addresses: SavedAddress[] = Array.isArray(json.data)
+            ? json.data
+            : Array.isArray(json.data?.addresses)
+            ? json.data.addresses
+            : [];
+
+          setSavedAddresses(addresses);
+
+          // Auto-select and fill default address
+          const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0];
+          if (defaultAddr) {
+            setSelectedAddressId(defaultAddr.id);
+            const formatted = buildAddressString(defaultAddr);
+            setValue("deliveryAddress", formatted);
+          }
+        }
+      } catch {
+        // silently fail — user can type manually
+      } finally {
+        setAddressesLoading(false);
+      }
+    };
+    fetchAddresses();
+  }, [setValue]);
+
+  const buildAddressString = (addr: SavedAddress): string => {
+    const parts = [addr.fullAddress];
+    if (addr.upazila) parts.push(addr.upazila);
+    parts.push(addr.district);
+    if (addr.phone) parts.push(`Phone: ${addr.phone}`);
+    return parts.join(", ");
+  };
+
+  const handleSelectAddress = (addr: SavedAddress) => {
+    setSelectedAddressId(addr.id);
+    setValue("deliveryAddress", buildAddressString(addr), { shouldValidate: true });
+  };
 
   // Sync payment method to form
   useEffect(() => {
@@ -135,7 +197,11 @@ export default function CheckoutPage() {
         <EmptyState
           icon={<ShoppingCart className="h-12 w-12" />}
           title="Your cart is empty"
-          action={<Link href="/marketplace"><Button>Browse Marketplace</Button></Link>}
+          action={
+            <Link href="/marketplace">
+              <Button>Browse Marketplace</Button>
+            </Link>
+          }
         />
       </DashboardLayout>
     );
@@ -159,6 +225,80 @@ export default function CheckoutPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+
+                {/* Saved addresses selector */}
+                {addressesLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-14 w-full rounded-lg" />
+                    <Skeleton className="h-14 w-full rounded-lg" />
+                  </div>
+                ) : savedAddresses.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Select a saved address:
+                    </p>
+                    <div className="grid gap-2">
+                      {savedAddresses.map((addr) => (
+                        <button
+                          key={addr.id}
+                          type="button"
+                          onClick={() => handleSelectAddress(addr)}
+                          className={cn(
+                            "w-full text-left rounded-lg border-2 px-4 py-3 transition-all",
+                            selectedAddressId === addr.id
+                              ? "border-primary bg-primary/5"
+                              : "border-input bg-background hover:bg-muted"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={cn(
+                                "h-4 w-4 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                                selectedAddressId === addr.id
+                                  ? "border-primary"
+                                  : "border-muted-foreground"
+                              )}
+                            >
+                              {selectedAddressId === addr.id && (
+                                <div className="h-2 w-2 rounded-full bg-primary" />
+                              )}
+                            </div>
+                            <Home className="h-4 w-4 text-primary flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold">{addr.label}</span>
+                                {addr.isDefault && (
+                                  <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                                    Default
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {addr.fullAddress}
+                                {addr.upazila ? `, ${addr.upazila}` : ""}, {addr.district}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex-1 border-t" />
+                      <span>or enter a new address below</span>
+                      <div className="flex-1 border-t" />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No saved addresses found.{" "}
+                    <Link href="/buyer/addresses" className="text-primary underline hover:no-underline">
+                      Add one
+                    </Link>{" "}
+                    or enter below.
+                  </p>
+                )}
+
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium">Full Address *</label>
                   <textarea
@@ -174,6 +314,7 @@ export default function CheckoutPage() {
                     <p className="text-xs text-destructive">{errors.deliveryAddress.message}</p>
                   )}
                 </div>
+
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium">Order Note (optional)</label>
                   <textarea
@@ -207,10 +348,14 @@ export default function CheckoutPage() {
                     )}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                        selectedPayment === method.id ? "border-primary" : "border-muted-foreground"
-                      )}>
+                      <div
+                        className={cn(
+                          "h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                          selectedPayment === method.id
+                            ? "border-primary"
+                            : "border-muted-foreground"
+                        )}
+                      >
                         {selectedPayment === method.id && (
                           <div className="h-2.5 w-2.5 rounded-full bg-primary" />
                         )}
@@ -219,8 +364,11 @@ export default function CheckoutPage() {
                         {method.icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm">{method.label}
-                          <span className="ml-2 font-normal text-muted-foreground text-xs">{method.labelBn}</span>
+                        <p className="font-semibold text-sm">
+                          {method.label}
+                          <span className="ml-2 font-normal text-muted-foreground text-xs">
+                            {method.labelBn}
+                          </span>
                         </p>
                         <p className="text-xs text-muted-foreground">{method.description}</p>
                       </div>
@@ -230,15 +378,23 @@ export default function CheckoutPage() {
 
                 {/* Mock bKash/Nagad transaction form */}
                 {(selectedPayment === "bkash" || selectedPayment === "nagad") && (
-                  <div className={cn(
-                    "rounded-lg border-2 p-4 space-y-3",
-                    selectedPayment === "bkash" ? "border-pink-300 bg-pink-50" : "border-orange-300 bg-orange-50"
-                  )}>
+                  <div
+                    className={cn(
+                      "rounded-lg border-2 p-4 space-y-3",
+                      selectedPayment === "bkash"
+                        ? "border-pink-300 bg-pink-50"
+                        : "border-orange-300 bg-orange-50"
+                    )}
+                  >
                     <div className="flex items-start gap-2">
-                      <div className={cn(
-                        "text-xs font-medium px-2 py-1 rounded",
-                        selectedPayment === "bkash" ? "bg-pink-200 text-pink-800" : "bg-orange-200 text-orange-800"
-                      )}>
+                      <div
+                        className={cn(
+                          "text-xs font-medium px-2 py-1 rounded",
+                          selectedPayment === "bkash"
+                            ? "bg-pink-200 text-pink-800"
+                            : "bg-orange-200 text-orange-800"
+                        )}
+                      >
                         DEMO
                       </div>
                       <div className="text-xs text-muted-foreground">
@@ -246,7 +402,9 @@ export default function CheckoutPage() {
                           Send ৳{total.toFixed(2)} to:
                         </p>
                         <p className="font-mono mt-0.5">
-                          {selectedMethod && "mockNumber" in selectedMethod ? selectedMethod.mockNumber : ""}
+                          {selectedMethod && "mockNumber" in selectedMethod
+                            ? selectedMethod.mockNumber
+                            : ""}
                         </p>
                         <p className="mt-1">
                           After sending, enter the Transaction ID below.
@@ -280,7 +438,11 @@ export default function CheckoutPage() {
                     <div key={item.id} className="flex gap-2 items-center">
                       <div className="h-10 w-10 bg-muted rounded flex-shrink-0 overflow-hidden">
                         {item.product?.images?.[0] ? (
-                          <img src={item.product.images[0].url} alt="" className="h-full w-full object-cover" />
+                          <img
+                            src={item.product.images[0].url}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
                           <Package className="h-5 w-5 m-auto mt-2.5 text-muted-foreground" />
                         )}
@@ -307,7 +469,9 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Payment</span>
-                    <Badge variant="outline" className="text-xs capitalize">{selectedPayment}</Badge>
+                    <Badge variant="outline" className="text-xs capitalize">
+                      {selectedPayment}
+                    </Badge>
                   </div>
                   <div className="border-t pt-2 flex justify-between font-bold text-base">
                     <span>Total</span>

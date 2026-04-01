@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
-    "@prisma/adapter-mariadb": "^7.5.0",
     "@prisma/client": "^5.11.0",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.0",

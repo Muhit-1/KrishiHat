@@ -51,8 +51,7 @@ function OrderSuccessContent() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            You will receive a confirmation email shortly.
-            The seller will process your order soon.
+           Seller will contact you within 24 hours via Mail
           </p>
 
           <div className="flex gap-3">

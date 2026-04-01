@@ -6,7 +6,7 @@ import { SectionHeader } from "@/components/common/section-header";
 import { EmptyState } from "@/components/common/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingBag, ShoppingCart, MessageSquare, MapPin } from "lucide-react";
+import { ShoppingBag, ShoppingCart, MessageSquare, MapPin ,Flag} from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 
@@ -17,6 +17,7 @@ const buyerLinks = [
   { href: "/buyer/chat", label: "Messages", icon: <MessageSquare className="h-4 w-4" /> },
   { href: "/buyer/addresses", label: "Addresses", icon: <MapPin className="h-4 w-4" /> },
   { href: "/buyer/profile", label: "Profile", icon: <ShoppingBag className="h-4 w-4" /> },
+  { href: "/buyer/reports", label: "Reports", icon: <Flag className="h-4 w-4" /> }
 ];
 
 const statusVariant: Record<string, any> = {

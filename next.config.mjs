@@ -1,7 +1,6 @@
-// next.config.mjs
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"],
   images: {
     domains: ["localhost"],
   },

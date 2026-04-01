@@ -217,7 +217,7 @@ export default function AuctionsPage() {
                     </div>
 
                     {/* CTA */}
-                    <Link href={`/auction/${auction.id}`} className="block">
+                    <Link href={`/auctions/${auction.id}`} className="block">
                       <Button
                         className="w-full"
                         variant={isLive ? "default" : "outline"}
@@ -266,3 +266,6 @@ export default function AuctionsPage() {
     </PageContainer>
   );
 }
+
+
+

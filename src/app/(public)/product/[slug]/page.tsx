@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { ShoppingCart, Package, BadgeCheck, Flag } from "lucide-react";
+import { ShoppingCart, Package, BadgeCheck, Flag, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/features/cart/hooks/use-cart";
@@ -24,6 +24,9 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const [reportReason, setReportReason] = useState("");
   const [reporting, setReporting] = useState(false);
   const [reportMsg, setReportMsg] = useState<string | null>(null);
+
+  const [startingChat, setStartingChat] = useState(false);
+  const [chatMsg, setChatMsg] = useState<string | null>(null);
 
   const { user } = useAuth();
   const { addItem } = useCart();
@@ -43,25 +46,60 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
       router.push("/login");
       return;
     }
-
     if (user.role !== "buyer") {
       setCartMsg("Only buyers can add to cart");
       return;
     }
-
     setAddingToCart(true);
     setCartMsg(null);
-
     const res = await addItem(product.id, quantity);
-
     if (res.success) {
       setCartMsg("Added to cart!");
     } else {
       setCartMsg(res.message || "Failed to add to cart");
     }
-
     setAddingToCart(false);
     setTimeout(() => setCartMsg(null), 3000);
+  };
+
+  const handleMessageSeller = async () => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    if (user.role !== "buyer") {
+      setChatMsg("Only buyers can message sellers");
+      setTimeout(() => setChatMsg(null), 3000);
+      return;
+    }
+
+    const sellerId = product?.seller?.id;
+    if (!sellerId) return;
+
+    setStartingChat(true);
+    setChatMsg(null);
+
+    try {
+      const res = await fetch("/api/chat/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participantId: sellerId }),
+      });
+      const json = await res.json();
+
+      if (json.success) {
+        // Redirect to chat page
+        router.push("/buyer/chat");
+      } else {
+        setChatMsg(json.message || "Failed to start conversation");
+        setTimeout(() => setChatMsg(null), 3000);
+      }
+    } catch {
+      setChatMsg("Network error. Please try again.");
+      setTimeout(() => setChatMsg(null), 3000);
+    } finally {
+      setStartingChat(false);
+    }
   };
 
   const handleReport = async () => {
@@ -69,9 +107,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
       router.push("/login");
       return;
     }
-
     if (!reportReason.trim()) return;
-
     setReporting(true);
 
     const res = await fetch("/api/reports", {
@@ -94,7 +130,6 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     } else {
       setReportMsg(json.message || "Failed to submit report.");
     }
-
     setTimeout(() => setReportMsg(null), 4000);
   };
 
@@ -166,7 +201,6 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               </div>
             )}
           </div>
-
           {images.length > 1 && (
             <div className="flex gap-2 flex-wrap">
               {images.map((img: any, i: number) => (
@@ -256,6 +290,12 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             </p>
           )}
 
+          {chatMsg && (
+            <p className="text-sm px-3 py-2 rounded-md bg-red-50 text-red-700 border border-red-200">
+              {chatMsg}
+            </p>
+          )}
+
           {reportMsg && (
             <p
               className={`text-sm px-3 py-2 rounded-md ${
@@ -290,38 +330,68 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
           {/* Seller info */}
           <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                {product.seller?.sellerProfile?.shopLogoUrl ? (
-                  <img
-                    src={product.seller.sellerProfile.shopLogoUrl}
-                    alt=""
-                    className="h-full w-full rounded-full object-cover"
-                  />
-                ) : (
-                  <span>🌾</span>
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="font-medium text-sm">
-                    {product.seller?.sellerProfile?.shopName || "—"}
-                  </p>
-                  {product.seller?.sellerProfile?.isVerified && (
-                    <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  {product.seller?.sellerProfile?.shopLogoUrl ? (
+                    <img
+                      src={product.seller.sellerProfile.shopLogoUrl}
+                      alt=""
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <span>🌾</span>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {product.seller?.profile?.fullName}
-                </p>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-medium text-sm">
+                      {product.seller?.sellerProfile?.shopName || "—"}
+                    </p>
+                    {product.seller?.sellerProfile?.isVerified && (
+                      <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0" />
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {product.seller?.profile?.fullName}
+                  </p>
+                </div>
+
+                <Link href={`/marketplace?seller=${product.seller?.id}`}>
+                  <Button size="sm" variant="outline" className="h-7 text-xs">
+                    View Shop
+                  </Button>
+                </Link>
               </div>
 
-              <Link href={`/marketplace?seller=${product.seller?.id}`}>
-                <Button size="sm" variant="outline" className="h-7 text-xs">
-                  View Shop
-                </Button>
-              </Link>
+              {/* Message Seller button — only visible to logged-in buyers */}
+              {user?.role === "buyer" && (
+                <div className="mt-3 pt-3 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleMessageSeller}
+                    isLoading={startingChat}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Message Seller
+                  </Button>
+                </div>
+              )}
+
+              {/* Prompt non-logged-in users to login to message */}
+              {!user && (
+                <div className="mt-3 pt-3 border-t">
+                  <Link href="/login">
+                    <Button variant="outline" size="sm" className="w-full">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Login to Message Seller
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -347,7 +417,6 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             <p className="text-xs text-muted-foreground mb-4">
               Reporting: {product.seller?.sellerProfile?.shopName}
             </p>
-
             <textarea
               value={reportReason}
               onChange={(e) => setReportReason(e.target.value)}
@@ -355,7 +424,6 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               placeholder="Describe the issue (min 5 characters)..."
               className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none mb-4"
             />
-
             <div className="flex gap-2 justify-end">
               <Button
                 variant="outline"
@@ -367,7 +435,6 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               >
                 Cancel
               </Button>
-
               <Button
                 size="sm"
                 onClick={handleReport}

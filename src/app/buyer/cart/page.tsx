@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/features/cart/hooks/use-cart";
-import { ShoppingCart, Trash2, ShoppingBag, MessageSquare, MapPin } from "lucide-react";
+import { ShoppingCart, Trash2, ShoppingBag, MessageSquare, MapPin ,Flag } from "lucide-react";
 import Link from "next/link";
+import { report } from "process";
 
 const buyerLinks = [
   { href: "/buyer/dashboard", label: "Dashboard", icon: <ShoppingBag className="h-4 w-4" /> },
@@ -17,6 +18,8 @@ const buyerLinks = [
   { href: "/buyer/chat", label: "Messages", icon: <MessageSquare className="h-4 w-4" /> },
   { href: "/buyer/addresses", label: "Addresses", icon: <MapPin className="h-4 w-4" /> },
   { href: "/buyer/profile", label: "Profile", icon: <ShoppingBag className="h-4 w-4" /> },
+  { href: "/buyer/reports", label: "Reports", icon: <Flag className="h-4 w-4" /> }
+
 ];
 
 export default function CartPage() {
