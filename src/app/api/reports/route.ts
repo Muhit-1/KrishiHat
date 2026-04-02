@@ -19,11 +19,23 @@ export async function GET(req: NextRequest) {
     const isStaff = ["moderator", "admin", "super_admin"].includes(user.role);
     const { page, limit, skip } = getPaginationParams({
       page: Number(req.nextUrl.searchParams.get("page") || 1),
+      limit: Number(req.nextUrl.searchParams.get("limit") || 50),
     });
 
+    const statusParam = req.nextUrl.searchParams.get("status") || undefined;
+    const searchParam = req.nextUrl.searchParams.get("q") || undefined;
+
     const where = isStaff
-      ? {} // staff sees all
-      : { reporterId: user.id }; // users see their own
+      ? {
+          ...(statusParam && { status: statusParam as any }),
+          ...(searchParam && {
+            OR: [
+              { reason: { contains: searchParam } },
+              { description: { contains: searchParam } },
+            ],
+          }),
+        }
+      : { reporterId: user.id };
 
     const [items, total] = await Promise.all([
       prisma.report.findMany({
@@ -41,10 +53,10 @@ export async function GET(req: NextRequest) {
 
     return ok(buildPaginatedResponse(items, total, page, limit));
   } catch (err) {
+    console.error("[GET /api/reports]", err);
     return serverError();
   }
 }
-
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();

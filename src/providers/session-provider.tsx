@@ -1,45 +1,75 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 
-// Silently refreshes the access token 2 minutes before expiry.
-// Access token = 15 minutes → refresh every 13 minutes.
+
 const REFRESH_INTERVAL_MS = 13 * 60 * 1000;
+
+
+const VISIBILITY_REFRESH_THRESHOLD_MS = 10 * 60 * 1000;
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastRefreshRef = useRef<number>(Date.now());
 
-  const refreshToken = async () => {
+  const refreshToken = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/refresh", { method: "POST" });
-      if (!res.ok) {
-        // Refresh failed (token expired/revoked) — clear interval
-        if (intervalRef.current) clearInterval(intervalRef.current);
+      if (res.ok) {
+        lastRefreshRef.current = Date.now();
+      } else {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        window.location.href = "/login?reason=session_expired";
       }
     } catch {
-      // Network error — don't clear interval, try again next cycle
+    
     }
-  };
+  }, []);
 
   useEffect(() => {
-    // Only refresh if user appears to be logged in
-    const hasAccessCookie = document.cookie
-      .split(";")
-      .some((c) => c.trim().startsWith("kh_access="));
+    let cancelled = false;
 
-    if (!hasAccessCookie) return;
+    const init = async () => {
+      try {
+        
+        const res = await fetch("/api/auth/me");
+        if (cancelled) return;
+        if (!res.ok) return; 
 
-    // Schedule periodic refresh
-    intervalRef.current = setInterval(refreshToken, REFRESH_INTERVAL_MS);
+      
+        lastRefreshRef.current = Date.now();
+        intervalRef.current = setInterval(refreshToken, REFRESH_INTERVAL_MS);
+      } catch {
+        
+      }
+    };
 
-    // Also refresh once shortly after mount (covers returning users)
-    const initialTimer = setTimeout(refreshToken, 5000);
+    init();
+
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        const elapsed = Date.now() - lastRefreshRef.current;
+        if (elapsed >= VISIBILITY_REFRESH_THRESHOLD_MS && intervalRef.current !== null) {
+          refreshToken();
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      clearTimeout(initialTimer);
+      cancelled = true;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [refreshToken]);
 
   return <>{children}</>;
 }

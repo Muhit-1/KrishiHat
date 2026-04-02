@@ -30,6 +30,7 @@ export default function ModeratorUsersPage() {
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [suspending, setSuspending] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchUsers = () => {
     setLoading(true);
@@ -38,7 +39,9 @@ export default function ModeratorUsersPage() {
     if (roleFilter) params.set("role", roleFilter);
     if (statusFilter) params.set("status", statusFilter);
 
-    fetch(`/api/admin/users?${params}`)
+    // FIX: Use /api/moderator/users instead of /api/admin/users
+    // The admin endpoint rejects moderator role with 403
+    fetch(`/api/moderator/users?${params}`)
       .then((r) => r.json())
       .then((json) => {
         if (json.success) {
@@ -53,20 +56,44 @@ export default function ModeratorUsersPage() {
 
   const handleSuspend = async (id: string, action: "suspend" | "unsuspend") => {
     setSuspending(id);
-    await fetch(`/api/admin/users/${id}/suspend`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    });
-    setSuspending(null);
-    fetchUsers();
+    setActionError(null);
+    try {
+      // FIX: Use moderator-specific suspend endpoint
+      const res = await fetch(`/api/moderator/users/${id}/suspend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        setActionError(json.message || "Failed to update user status.");
+      } else {
+        // Optimistically update UI without full re-fetch
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === id
+              ? { ...u, status: action === "suspend" ? "suspended" : "active" }
+              : u
+          )
+        );
+      }
+    } catch {
+      setActionError("Network error. Please try again.");
+    } finally {
+      setSuspending(null);
+    }
   };
 
   return (
     <DashboardLayout sidebarLinks={modLinks} sidebarTitle="Moderator Panel">
       <SectionHeader title="User Management" subtitle={`${total} users`} />
 
-      {/* Search and filters */}
+      {actionError && (
+        <div className="mb-4 bg-destructive/10 border border-destructive/30 text-destructive text-sm px-4 py-2 rounded-md">
+          {actionError}
+        </div>
+      )}
+
       <div className="flex gap-3 flex-wrap mb-4">
         <div className="flex-1 min-w-[200px] relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -131,22 +158,15 @@ export default function ModeratorUsersPage() {
                   </td>
                   <td className="px-4 py-3">
                     {user.status === "active" ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 px-2 text-xs"
+                      <Button size="sm" variant="outline" className="h-6 px-2 text-xs"
                         isLoading={suspending === user.id}
-                        onClick={() => handleSuspend(user.id, "suspend")}
-                      >
+                        onClick={() => handleSuspend(user.id, "suspend")}>
                         Suspend
                       </Button>
                     ) : user.status === "suspended" ? (
-                      <Button
-                        size="sm"
-                        className="h-6 px-2 text-xs"
+                      <Button size="sm" className="h-6 px-2 text-xs"
                         isLoading={suspending === user.id}
-                        onClick={() => handleSuspend(user.id, "unsuspend")}
-                      >
+                        onClick={() => handleSuspend(user.id, "unsuspend")}>
                         Unsuspend
                       </Button>
                     ) : null}

@@ -17,43 +17,67 @@ const modLinks = [
   { href: "/moderator/users", label: "Users", icon: <Users className="h-4 w-4" /> },
 ];
 
-// Disputes are reports with reason containing "dispute" OR order-related reports
-// We treat open reports with delivery/order reasons as disputes
 export default function DisputesPage() {
   const [disputes, setDisputes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState<string | null>(null);
+  // FIX: Track errors so moderator knows if resolve failed
+  const [resolveError, setResolveError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Fetch open reports — disputes are reports that mention orders/delivery
+  const fetchDisputes = () => {
+    setLoading(true);
     fetch("/api/reports?limit=50&status=open")
       .then((r) => r.json())
       .then((json) => {
         if (json.success) {
-          // Filter for order/delivery related disputes
           const all = json.data.items;
-          const disputeKeywords = ["order", "delivery", "product", "payment", "refund", "dispute", "not received", "wrong item"];
+          const disputeKeywords = [
+            "order", "delivery", "product", "payment",
+            "refund", "dispute", "not received", "wrong item",
+          ];
           const filtered = all.filter((r: any) =>
-            disputeKeywords.some((kw) =>
-              r.reason?.toLowerCase().includes(kw) ||
-              r.description?.toLowerCase().includes(kw)
+            disputeKeywords.some(
+              (kw) =>
+                r.reason?.toLowerCase().includes(kw) ||
+                r.description?.toLowerCase().includes(kw)
             )
           );
           setDisputes(filtered.length > 0 ? filtered : all.slice(0, 5));
         }
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchDisputes();
   }, []);
 
   const handleResolve = async (id: string, status: "resolved" | "dismissed") => {
     setResolving(id);
-    await fetch(`/api/reports/${id}/resolve`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    setResolving(null);
-    setDisputes((prev) => prev.filter((d) => d.id !== id));
+    setResolveError(null);
+
+    try {
+      const res = await fetch(`/api/reports/${id}/resolve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      const json = await res.json();
+
+      // FIX: Only remove from local state if the API call actually succeeded.
+      // Previously the item was removed regardless of API response, causing
+      // it to reappear on the next full fetch.
+      if (json.success) {
+        setDisputes((prev) => prev.filter((d) => d.id !== id));
+      } else {
+        setResolveError(json.message || "Failed to resolve dispute. Please try again.");
+      }
+    } catch {
+      setResolveError("Network error. Please try again.");
+    } finally {
+      setResolving(null);
+    }
   };
 
   return (
@@ -63,16 +87,16 @@ export default function DisputesPage() {
         subtitle="Order and delivery related disputes between buyers and sellers"
       />
 
-      <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg mb-6 text-sm">
-        <p className="font-semibold">What are disputes?</p>
-        <p className="text-xs mt-1">
-          Disputes are reports related to orders, deliveries, payments, or product issues.
-          Review both sides and resolve or dismiss accordingly.
-        </p>
-      </div>
+      {resolveError && (
+        <div className="mb-4 bg-destructive/10 border border-destructive/30 text-destructive text-sm px-4 py-2 rounded-md">
+          {resolveError}
+        </div>
+      )}
 
       {loading ? (
-        <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
+        </div>
       ) : disputes.length === 0 ? (
         <EmptyState
           icon={<MessageSquare className="h-12 w-12" />}
