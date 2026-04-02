@@ -88,7 +88,6 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
       const json = await res.json();
 
       if (json.success) {
-        // Redirect to chat page
         router.push("/buyer/chat");
       } else {
         setChatMsg(json.message || "Failed to start conversation");
@@ -358,7 +357,8 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                   </p>
                 </div>
 
-                <Link href={`/marketplace?seller=${product.seller?.id}`}>
+                {/* FIX: View Shop now points to the public shop page */}
+                <Link href={`/shop/${product.seller?.id}`}>
                   <Button size="sm" variant="outline" className="h-7 text-xs">
                     View Shop
                   </Button>
