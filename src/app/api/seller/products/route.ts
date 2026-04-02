@@ -31,8 +31,11 @@ export async function GET(req: NextRequest) {
         take: limit,
         include: {
           images: { where: { isPrimary: true }, take: 1 },
-          category: { select: { id: true, name: true } },
+          // FIX: Added auctionAllowed to category select so auction page can filter correctly
+          category: { select: { id: true, name: true, auctionAllowed: true } },
           subcategory: { select: { id: true, name: true } },
+          // FIX: Include auction relation so we can filter out products that already have one
+          auction: { select: { id: true } },
         },
         orderBy: { createdAt: "desc" },
       }),

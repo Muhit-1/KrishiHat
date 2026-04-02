@@ -81,11 +81,9 @@ export async function POST(req: NextRequest) {
       return badRequest("Validation failed", parsed.error.flatten().fieldErrors as Record<string, string[]>);
     }
 
-    // Check seller is verified
     const sellerProfile = await prisma.sellerProfile.findUnique({ where: { userId: user.id } });
     if (!sellerProfile?.isVerified) return forbidden("Complete seller verification first");
 
-    // Auction category check
     if (parsed.data.listingType === "auction") {
       const category = await prisma.category.findUnique({ where: { id: parsed.data.categoryId } });
       if (!category?.auctionAllowed) return badRequest("Auction is not allowed for this category");

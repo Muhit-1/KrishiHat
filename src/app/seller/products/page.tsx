@@ -17,7 +17,6 @@ const sellerLinks = [
   { href: "/seller/auctions", label: "Auctions", icon: <Gavel className="h-4 w-4" /> },
   { href: "/seller/orders", label: "Orders", icon: <ShoppingBag className="h-4 w-4" /> },
   { href: "/seller/chat", label: "Messages", icon: <MessageSquare className="h-4 w-4" /> },
-  { href: "/seller/verification", label: "Verification", icon: <BadgeCheck className="h-4 w-4" /> },
   { href: "/seller/profile", label: "Shop Profile", icon: <User className="h-4 w-4" /> },
   { href: "/seller/analytics", label: "Analytics", icon: <BarChart2 className="h-4 w-4" /> },
 ];

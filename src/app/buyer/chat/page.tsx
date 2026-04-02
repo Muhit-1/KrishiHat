@@ -21,7 +21,7 @@ const buyerLinks = [
 ];
 
 export default function BuyerChatPage() {
-  const { conversations, loading, refetch } = useConversations();
+  const { conversations, loading} = useConversations();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const { messages, sendMessage, loading: messagesLoading } = useMessages(activeId || "");
