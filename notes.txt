@@ -1,3 +1,6 @@
 after changing in the seeddata 
+/reset you seed data
+npx prisma migrate reset 
+
 npx prisma generate
 npm run db:seed
