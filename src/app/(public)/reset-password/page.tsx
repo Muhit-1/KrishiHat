@@ -6,8 +6,10 @@ import { resetPasswordSchema, type ResetPasswordInput } from "@/lib/validations/
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useT } from "@/providers/locale-provider";
 
 export default function ResetPasswordPage() {
+  const t = useT();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
   });
@@ -27,14 +29,14 @@ export default function ResetPasswordPage() {
     <div className="min-h-[70vh] flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Set New Password</CardTitle>
+          <CardTitle>{t("auth.set_new_password")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <input type="hidden" {...register("token")} />
-            <Input label="New Password" type="password" error={errors.password?.message} {...register("password")} />
-            <Input label="Confirm New Password" type="password" error={errors.confirmPassword?.message} {...register("confirmPassword")} />
-            <Button type="submit" className="w-full" isLoading={isSubmitting}>Reset Password</Button>
+            <Input label={t("auth.new_password")} type="password" error={errors.password?.message} {...register("password")} />
+            <Input label={t("auth.confirm_new_password")} type="password" error={errors.confirmPassword?.message} {...register("confirmPassword")} />
+            <Button type="submit" className="w-full" isLoading={isSubmitting}>{t("auth.reset_password_btn")}</Button>
           </form>
         </CardContent>
       </Card>

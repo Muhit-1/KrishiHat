@@ -12,8 +12,10 @@ import { Search, Package, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { useProducts } from "@/features/marketplace/hooks/use-products";
 import { cn } from "@/lib/utils/cn";
+import { useT } from "@/providers/locale-provider";
 
 export default function MarketplacePage() {
+  const t = useT();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -56,11 +58,10 @@ export default function MarketplacePage() {
     <div className="min-h-screen">
       <PageContainer>
         <SectionHeader
-          title="Marketplace"
-          subtitle={total > 0 ? `${total} products found` : "Browse fresh products from verified farmers"}
+          title={t("marketplace.title")}
+          subtitle={total > 0 ? `${total} ${t("marketplace.products_found")}` : t("marketplace.browse_fresh")}
         />
 
-        {/* Search */}
         <div className="flex gap-3 mb-6 flex-wrap">
           <div className="flex-1 min-w-[200px] relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -69,41 +70,40 @@ export default function MarketplacePage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") setQuery(search); }}
-              placeholder="Search products... (press Enter)"
+              placeholder={t("marketplace.search")}
               className="w-full pl-9 pr-4 h-10 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
-          <Button onClick={() => setQuery(search)} variant="default">Search</Button>
+          <Button onClick={() => setQuery(search)} variant="default">{t("marketplace.search_btn")}</Button>
           <Button variant="outline" onClick={() => setShowFilters((v) => !v)}>
             <SlidersHorizontal className="h-4 w-4 mr-2" />
-            Filters
+            {t("marketplace.filter")}
             {hasFilters && <span className="ml-1.5 bg-primary text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">!</span>}
           </Button>
           {hasFilters && (
             <Button variant="ghost" onClick={clearFilters}>
-              <X className="h-4 w-4 mr-1" /> Clear
+              <X className="h-4 w-4 mr-1" /> {t("marketplace.clear")}
             </Button>
           )}
         </div>
 
-        {/* Filter panel */}
         {showFilters && (
           <div className="bg-muted/40 border rounded-lg p-4 mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">Condition</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("marketplace.condition")}</label>
               <select
                 value={condition}
                 onChange={(e) => setCondition(e.target.value)}
                 className="h-9 px-2 rounded-md border border-input text-sm bg-background"
               >
-                <option value="">Any condition</option>
-                <option value="new">New</option>
-                <option value="used">Used</option>
-                <option value="refurbished">Refurbished</option>
+                <option value="">{t("marketplace.any_condition")}</option>
+                <option value="new">{t("marketplace.new")}</option>
+                <option value="used">{t("marketplace.used")}</option>
+                <option value="refurbished">{t("marketplace.refurbished")}</option>
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">Min Price (৳)</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("marketplace.min_price")}</label>
               <input
                 type="number"
                 value={minPrice}
@@ -113,7 +113,7 @@ export default function MarketplacePage() {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">Max Price (৳)</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("marketplace.max_price")}</label>
               <input
                 type="number"
                 value={maxPrice}
@@ -126,10 +126,9 @@ export default function MarketplacePage() {
         )}
 
         <div className="flex gap-6">
-          {/* Category sidebar */}
           <aside className="hidden md:block w-52 flex-shrink-0">
             <div className="sticky top-24">
-              <h3 className="text-sm font-semibold mb-3">Categories</h3>
+              <h3 className="text-sm font-semibold mb-3">{t("marketplace.categories")}</h3>
               <div className="space-y-1">
                 <button
                   onClick={() => setSelectedCategory("")}
@@ -138,7 +137,7 @@ export default function MarketplacePage() {
                     !selectedCategory ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"
                   )}
                 >
-                  All Products
+                  {t("marketplace.all_categories")}
                 </button>
                 {categories.map((cat) => (
                   <button
@@ -151,7 +150,7 @@ export default function MarketplacePage() {
                   >
                     {cat.name}
                     {cat.auctionAllowed && (
-                      <span className="ml-1 text-xs opacity-70">(Auction)</span>
+                      <span className="ml-1 text-xs opacity-70">{t("marketplace.auction_label")}</span>
                     )}
                   </button>
                 ))}
@@ -159,24 +158,26 @@ export default function MarketplacePage() {
             </div>
           </aside>
 
-          {/* Mobile category strip */}
           <div className="md:hidden flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 mb-2 w-full">
             <button
               onClick={() => setSelectedCategory("")}
               className={cn("flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
                 !selectedCategory ? "bg-primary text-primary-foreground border-primary" : "bg-background border-input hover:bg-muted")}
-            >All</button>
+            >
+              {t("marketplace.all_categories")}
+            </button>
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
                 className={cn("flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
                   selectedCategory === cat.id ? "bg-primary text-primary-foreground border-primary" : "bg-background border-input hover:bg-muted")}
-              >{cat.name}</button>
+              >
+                {cat.name}
+              </button>
             ))}
           </div>
 
-          {/* Product grid */}
           <div className="flex-1 min-w-0">
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -185,9 +186,9 @@ export default function MarketplacePage() {
             ) : products.length === 0 ? (
               <EmptyState
                 icon={<Package className="h-12 w-12" />}
-                title="No products found"
-                description="Try different filters or search terms."
-                action={hasFilters ? <Button onClick={clearFilters}>Clear Filters</Button> : undefined}
+                title={t("marketplace.no_products")}
+                description={t("marketplace.no_products_desc")}
+                action={hasFilters ? <Button onClick={clearFilters}>{t("marketplace.clear_filters")}</Button> : undefined}
               />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
