@@ -20,12 +20,32 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("q") || undefined;
     const sellerId = searchParams.get("seller") || undefined;
     const condition = searchParams.get("condition") || undefined;
+    const statusParam = searchParams.get("status") || undefined;
     const minPrice = searchParams.get("minPrice") ? parseFloat(searchParams.get("minPrice")!) : undefined;
     const maxPrice = searchParams.get("maxPrice") ? parseFloat(searchParams.get("maxPrice")!) : undefined;
 
+    // Check if the caller is an admin/moderator/super_admin so they can
+    // see products of any status. Public callers always see only "active".
+    const currentUser = await getCurrentUser();
+    const isPrivileged =
+      currentUser &&
+      ["admin", "super_admin", "moderator"].includes(currentUser.role);
+
+    // Build the status condition:
+    // - Privileged users: honour the ?status= param (or no filter when omitted)
+    // - Everyone else:    always restrict to "active"
+    let statusCondition: Record<string, unknown>;
+    if (isPrivileged) {
+      // Allow filtering by a specific status, or return ALL statuses when none given
+      statusCondition = statusParam ? { status: statusParam } : {};
+    } else {
+      // Public / buyer / seller → only active products
+      statusCondition = { status: "active" };
+    }
+
     const where = {
-      status: "active" as const,
       deletedAt: null,
+      ...statusCondition,
       ...(categoryId && { categoryId }),
       ...(subcategoryId && { subcategoryId }),
       ...(sellerId && { sellerId }),
@@ -55,7 +75,12 @@ export async function GET(req: NextRequest) {
         include: {
           images: { where: { isPrimary: true }, take: 1 },
           category: { select: { id: true, name: true, nameBn: true, slug: true } },
-          seller: { include: { profile: { select: { fullName: true } }, sellerProfile: { select: { shopName: true, isVerified: true } } } },
+          seller: {
+            include: {
+              profile: { select: { fullName: true } },
+              sellerProfile: { select: { shopName: true, isVerified: true } },
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
       }),
