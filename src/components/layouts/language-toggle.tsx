@@ -18,7 +18,7 @@ export function LanguageToggle() {
         )}
         title="Switch to English"
       >
-        EN
+        ENG
       </button>
       <button
         onClick={() => setLocale("bn")}
@@ -30,7 +30,7 @@ export function LanguageToggle() {
         )}
         title="বাংলায় পরিবর্তন করুন"
       >
-        বাং
+        বাংলা
       </button>
     </div>
   );

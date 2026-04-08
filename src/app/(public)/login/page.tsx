@@ -146,8 +146,8 @@ function LoginForm() {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-            <Input label={t("auth.email")} type="email" placeholder="you@example.com" error={errors.email?.message} {...register("email")} />
-            <Input label={t("auth.password")} type="password" placeholder={t("auth.password_placeholder")} error={errors.password?.message} {...register("password")} />
+            <Input label={t("auth.email")} type="email" error={errors.email?.message} {...register("email")} />
+            <Input label={t("auth.password")} type="password" error={errors.password?.message} {...register("password")} />
             <div className="flex justify-end">
               <Link href="/forgot-password" className="text-xs text-primary hover:underline">
                 {t("auth.forgot_password")}
